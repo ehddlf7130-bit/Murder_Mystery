@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dev-dist/
+*.local
+.DS_Store
+
+# 빌드 캐시
+*.tsbuildinfo
+
+# 에디터
+.vscode/*
+!.vscode/extensions.json
+.idea/
