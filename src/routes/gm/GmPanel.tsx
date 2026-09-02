@@ -3,7 +3,9 @@ import type { QuizQuestion } from '@/types/scenario';
 import {
   buildClueStates,
   locationLabel,
+  remainingHints,
   remainingInvestigations,
+  totalHints,
   totalInvestigations,
   type ClueState,
 } from '@/lib/clueRules';
@@ -57,8 +59,10 @@ export function GmPanel() {
   const player = useScenarioPlayer(scenario.id);
 
   const adjustInvestigations = useProgressStore((s) => s.adjustInvestigations);
+  const adjustHints = useProgressStore((s) => s.adjustHints);
   const setForceUnlocked = useProgressStore((s) => s.setForceUnlocked);
   const setViewed = useProgressStore((s) => s.setViewed);
+  const setHintRevealed = useProgressStore((s) => s.setHintRevealed);
   const resetScenario = useProgressStore((s) => s.resetScenario);
   const reopenSubmission = usePlayerStore((s) => s.reopenSubmission);
   const resetPlayer = usePlayerStore((s) => s.resetPlayer);
@@ -75,6 +79,8 @@ export function GmPanel() {
 
   const total = totalInvestigations(scenario, progress);
   const remaining = remainingInvestigations(scenario, progress);
+  const hintTotal = totalHints(scenario, progress);
+  const hintsLeft = remainingHints(scenario, progress);
   const viewedCount = progress.viewedClueIds.length;
   const characterName = (id: string) =>
     scenario.characters.find((c) => c.id === id)?.name ?? id;
@@ -89,9 +95,10 @@ export function GmPanel() {
       subtitle="이 화면은 플레이어에게 보여주지 마세요. 정답이 그대로 표시됩니다."
     >
       {/* ── 현황 ── */}
-      <div className="mb-8 grid gap-3 sm:grid-cols-4">
+      <div className="mb-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {[
           { label: '남은 횟수', value: `${remaining}`, sub: `/ ${total}` },
+          { label: '남은 힌트', value: `${hintsLeft}`, sub: `/ ${hintTotal}` },
           { label: '열람한 단서', value: `${viewedCount}`, sub: `/ ${scenario.clues.length}` },
           {
             label: '횟수 조정',
@@ -142,6 +149,24 @@ export function GmPanel() {
         </Panel>
       </section>
 
+      {/* ── 힌트 조정 ── 열람 예산과 별개의 자원이라 따로 가감한다 */}
+      <section className="mb-8">
+        <SectionTitle>힌트 횟수 조정</SectionTitle>
+        <Panel>
+          <div className="flex flex-wrap items-center gap-2">
+            {[-3, -1, +1, +3].map((delta) => (
+              <Button key={delta} onClick={() => adjustHints(scenario.id, delta)}>
+                {delta > 0 ? `+${delta}` : delta}
+              </Button>
+            ))}
+            <p className="text-fog-400 ml-2 text-sm">
+              기본 {scenario.totalHints}회 + 조정 {progress.bonusHints}회 ={' '}
+              <strong className="text-fog-100">{hintTotal}회</strong>
+            </p>
+          </div>
+        </Panel>
+      </section>
+
       {/* ── 단서 관리 ── */}
       <section className="mb-8">
         <SectionTitle
@@ -159,6 +184,7 @@ export function GmPanel() {
             if (!state) return null;
             const badge = statusBadge[state.status];
             const isViewed = state.status === 'viewed';
+            const hintRevealed = state.hint.status === 'revealed';
 
             return (
               <div
@@ -173,6 +199,7 @@ export function GmPanel() {
                   </p>
                   <p className="text-fog-400 mt-0.5 text-xs">
                     📍 {locationLabel(clue.location, scenario)} · 비용 {state.cost}회
+                    {clue.hint && <> · 힌트 {state.hint.cost}회</>}
                     {clue.requires.length > 0 && (
                       <> · 선행 {clue.requires.length}개</>
                     )}
@@ -208,6 +235,19 @@ export function GmPanel() {
                   >
                     {isViewed ? '열람 취소' : '열람 처리'}
                   </Button>
+                  {clue.hint && (
+                    <Button
+                      size="sm"
+                      variant={hintRevealed ? 'primary' : 'secondary'}
+                      onClick={() =>
+                        setHintRevealed(scenario.id, clue.id, !hintRevealed, {
+                          charge: state.hint.cost,
+                        })
+                      }
+                    >
+                      {hintRevealed ? '힌트 취소' : '힌트 공개'}
+                    </Button>
+                  )}
                 </div>
               </div>
             );
@@ -338,8 +378,9 @@ export function GmPanel() {
         onCancel={() => setResetStage(0)}
       >
         <p>
-          현재 열람한 단서 <strong>{viewedCount}건</strong>과 남은 횟수{' '}
-          <strong>{remaining}회</strong>가 모두 사라집니다.
+          현재 열람한 단서 <strong>{viewedCount}건</strong>, 남은 횟수{' '}
+          <strong>{remaining}회</strong>, 구매한 힌트{' '}
+          <strong>{progress.revealedHintClueIds.length}건</strong>이 모두 사라집니다.
         </p>
       </ConfirmDialog>
 

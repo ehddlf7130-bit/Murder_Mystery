@@ -53,6 +53,18 @@ UI 코드는 건드리지 않는다.
 
 데이터 계약은 [src/types/scenario.ts](src/types/scenario.ts)에 정의되어 있다.
 
+## 시나리오 내용 집필
+
+단서·구역·캐릭터 원고는 [content/](content/)에서 **Markdown으로 먼저 쓴다.**
+앱 데이터는 ID로 서로를 참조하는데(단서의 선행조건 = 다른 단서의 ID 배열),
+집필하면서 ID까지 관리하면 오타 하나가 "단서가 영원히 안 열림"으로 이어지기 때문이다.
+원고에서는 **전부 이름으로만 참조**하고, ID 부여는 변환 단계에서 처리한다.
+
+1. [content/cruise.md](content/cruise.md)를 연다 — 현재 더미 내용이 양식대로 채워져 있어
+   실제 동작하는 예시를 보면서 덮어쓸 수 있다.
+2. 양식과 게이팅 설계 규칙은 [content/README.md](content/README.md)에 있다.
+3. 다 쓰면 `src/data/<id>/*.ts`로 옮기고 `npm test`로 검증한다.
+
 ### 무결성 검사가 잡아 주는 것
 
 [src/lib/validateScenario.ts](src/lib/validateScenario.ts)는 개발 모드에서 콘솔에

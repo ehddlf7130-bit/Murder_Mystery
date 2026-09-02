@@ -82,8 +82,17 @@ export function ClueCard({
 
       {locked && <RequirementList state={state} scenario={scenario} />}
 
-      {status === 'viewed' && clue.hint && (
+      {/*
+        힌트는 힌트 예산을 따로 소모해야 볼 수 있다.
+        구매 전에 원문을 흘리면 유료화가 무의미하므로 존재만 알린다.
+      */}
+      {status === 'viewed' && state.hint.status === 'revealed' && (
         <p className="text-fog-400 line-clamp-2 text-sm">💡 {clue.hint}</p>
+      )}
+      {status === 'viewed' && state.hint.status !== 'revealed' && clue.hint && (
+        <p className="text-fog-500 text-xs">
+          💡 힌트 있음 {state.hint.cost === 0 ? '· 무료' : `· ${state.hint.cost}회`}
+        </p>
       )}
 
       {state.gmUnlocked && status !== 'locked' && (

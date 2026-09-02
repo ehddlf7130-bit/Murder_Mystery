@@ -1,6 +1,5 @@
 import { ClueCard } from '@/components/clue/ClueCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { SectionTitle } from '@/components/ui/Panel';
 import { Badge } from '@/components/ui/Badge';
 import { useScenario } from '../scenarioContext';
 import { useClueViewerContext } from './boardContext';
@@ -16,19 +15,13 @@ export function SpecialClues() {
   const scenario = useScenario();
   const { states, request } = useClueViewerContext();
 
-  const sections = scenario.specialCategories
-    .map((category) => ({
-      category,
-      clues: scenario.clues.filter((c) => c.special?.category === category.key),
-    }))
-    .filter((section) => section.clues.length > 0);
+  const specialClues = scenario.clues.filter((c) => c.special);
 
-  const unlockedCount = scenario.clues.filter(
-    (c) => c.special && states.get(c.id)?.status !== 'locked',
+  const unlockedCount = specialClues.filter(
+    (c) => states.get(c.id)?.status !== 'locked',
   ).length;
-  const specialTotal = scenario.clues.filter((c) => c.special).length;
 
-  if (sections.length === 0) {
+  if (specialClues.length === 0) {
     return (
       <EmptyState
         icon="✦"
@@ -46,34 +39,24 @@ export function SpecialClues() {
           할 수 있습니다.
         </p>
         <Badge tone="brass">
-          해제 {unlockedCount}/{specialTotal}
+          해제 {unlockedCount}/{specialClues.length}
         </Badge>
       </div>
 
-      <div className="space-y-8">
-        {sections.map(({ category, clues }) => (
-          <section key={category.key}>
-            <SectionTitle>
-              {category.emoji && <span aria-hidden>{category.emoji} </span>}
-              {category.label}
-            </SectionTitle>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {clues.map((clue) => {
-                const state = states.get(clue.id);
-                if (!state) return null;
-                return (
-                  <ClueCard
-                    key={clue.id}
-                    state={state}
-                    scenario={scenario}
-                    onClick={() => request(clue.id)}
-                    showLocation={state.status !== 'locked'}
-                  />
-                );
-              })}
-            </div>
-          </section>
-        ))}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {specialClues.map((clue) => {
+          const state = states.get(clue.id);
+          if (!state) return null;
+          return (
+            <ClueCard
+              key={clue.id}
+              state={state}
+              scenario={scenario}
+              onClick={() => request(clue.id)}
+              showLocation={state.status !== 'locked'}
+            />
+          );
+        })}
       </div>
     </>
   );

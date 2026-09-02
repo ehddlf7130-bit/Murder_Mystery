@@ -1,7 +1,12 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useClueViewer } from '@/components/clue/useClueViewer';
 import { ClueViewerDialogs } from '@/components/clue/ClueViewerDialogs';
-import { totalInvestigations } from '@/lib/clueRules';
+import {
+  remainingHints,
+  remainingInvestigations,
+  totalHints,
+  totalInvestigations,
+} from '@/lib/clueRules';
 import { useScenarioProgress } from '@/store/progressStore';
 import { cn } from '@/lib/cn';
 import { useScenario } from '../scenarioContext';
@@ -13,52 +18,87 @@ const tabs = [
   { to: 'log', label: '열람 기록', icon: '📜' },
 ];
 
-/** 남은 열람 횟수 — 화면에서 가장 눈에 띄어야 하는 정보 */
-function InvestigationCounter() {
-  const scenario = useScenario();
-  const progress = useScenarioProgress(scenario.id);
-  const total = totalInvestigations(scenario, progress);
-  const remaining = Math.max(0, total - progress.spent);
-  const ratio = total === 0 ? 0 : remaining / total;
+/** 잔여량이 줄수록 붉어진다 */
+function toneFor(ratio: number, empty: boolean) {
+  if (empty || ratio <= 0.25) return { text: 'text-crimson-400', bar: 'bg-crimson-500' };
+  if (ratio <= 0.5) return { text: 'text-brass-300', bar: 'bg-brass-500' };
+  return { text: 'text-jade-400', bar: 'bg-jade-500' };
+}
 
-  const tone =
-    remaining === 0
-      ? 'text-crimson-400'
-      : ratio <= 0.25
-        ? 'text-crimson-400'
-        : ratio <= 0.5
-          ? 'text-brass-300'
-          : 'text-jade-400';
+/**
+ * 남은 예산 표시. 열람 횟수와 힌트 횟수는 **서로 다른 예산**이라 따로 센다.
+ * 힌트는 보조 자원이므로 막대 없이 작게 — 헤더가 모바일에서 이미 빡빡하다.
+ */
+function ResourceCounter({
+  label,
+  remaining,
+  total,
+  compact = false,
+}: {
+  label: string;
+  remaining: number;
+  total: number;
+  compact?: boolean;
+}) {
+  const ratio = total === 0 ? 0 : remaining / total;
+  const tone = toneFor(ratio, remaining === 0);
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-3">
       <div className="text-right">
         <p className="text-fog-400 text-[11px] font-semibold tracking-widest uppercase">
-          남은 열람 횟수
+          {label}
         </p>
         <p className="flex items-baseline justify-end gap-1 leading-none">
-          <span className={cn('text-4xl font-bold tabular-nums', tone)}>
+          <span
+            className={cn(
+              'font-bold tabular-nums',
+              compact ? 'text-2xl' : 'text-4xl',
+              tone.text,
+            )}
+          >
             {remaining}
           </span>
-          <span className="text-fog-400 text-lg">/ {total}</span>
+          <span className={cn('text-fog-400', compact ? 'text-sm' : 'text-lg')}>
+            / {total}
+          </span>
         </p>
       </div>
-      <div
-        className="bg-ink-800 h-14 w-2.5 overflow-hidden rounded-full"
-        role="presentation"
-      >
+      {!compact && (
         <div
-          className={cn(
-            'w-full rounded-full transition-all duration-500',
-            remaining === 0 || ratio <= 0.25
-              ? 'bg-crimson-500'
-              : ratio <= 0.5
-                ? 'bg-brass-500'
-                : 'bg-jade-500',
-          )}
-          style={{ height: `${ratio * 100}%`, marginTop: `${(1 - ratio) * 100}%` }}
+          className="bg-ink-800 h-14 w-2.5 overflow-hidden rounded-full"
+          role="presentation"
+        >
+          <div
+            className={cn('w-full rounded-full transition-all duration-500', tone.bar)}
+            style={{ height: `${ratio * 100}%`, marginTop: `${(1 - ratio) * 100}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 남은 열람 횟수 + 남은 힌트 — 화면에서 가장 눈에 띄어야 하는 정보 */
+function BudgetCounters() {
+  const scenario = useScenario();
+  const progress = useScenarioProgress(scenario.id);
+
+  return (
+    <div className="flex shrink-0 items-center gap-4 sm:gap-6">
+      {totalHints(scenario, progress) > 0 && (
+        <ResourceCounter
+          label="남은 힌트"
+          remaining={remainingHints(scenario, progress)}
+          total={totalHints(scenario, progress)}
+          compact
         />
-      </div>
+      )}
+      <ResourceCounter
+        label="남은 열람 횟수"
+        remaining={remainingInvestigations(scenario, progress)}
+        total={totalInvestigations(scenario, progress)}
+      />
     </div>
   );
 }
@@ -84,7 +124,7 @@ export function BoardLayout() {
               {scenario.title}
             </h1>
           </div>
-          <InvestigationCounter />
+          <BudgetCounters />
         </div>
 
         <nav className="mx-auto flex max-w-6xl gap-1 px-4 sm:px-6" aria-label="진행 화면 탭">

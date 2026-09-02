@@ -7,6 +7,9 @@ import { makeScenario } from './testScenario';
 const errorsOf = (scenario: Parameters<typeof validateScenario>[0]) =>
   validateScenario(scenario).filter((i) => i.severity === 'error');
 
+const warningsOf = (scenario: Parameters<typeof validateScenario>[0]) =>
+  validateScenario(scenario).filter((i) => i.severity === 'warning');
+
 describe('등록된 모든 시나리오', () => {
   // 현장에서 단서가 안 열리는 사고를 막는 CI 게이트.
   it.each(listScenarios().map((s) => [s.title, s] as const))(
@@ -103,16 +106,6 @@ describe('validateScenario', () => {
     expect(errors.some((e) => e.where === 'clue:y')).toBe(true);
   });
 
-  it('specialCategories에 없는 카테고리를 잡아낸다', () => {
-    const scenario = makeScenario();
-    scenario.clues = scenario.clues.map((c) =>
-      c.id === 'tier1'
-        ? { ...c, special: { category: 'unknown', lockedLabel: '???' } }
-        : c,
-    );
-    expect(errorsOf(scenario).some((e) => e.message.includes('unknown'))).toBe(true);
-  });
-
   it('중복 ID를 잡아낸다', () => {
     const scenario = makeScenario();
     scenario.clues = [...scenario.clues, { ...scenario.clues[0]! }];
@@ -136,9 +129,95 @@ describe('validateScenario', () => {
     expect(errorsOf(scenario).some((e) => e.message.includes('z'))).toBe(true);
   });
 
+  it('층을 정의하지 않은 시나리오는 층 관련 지적을 하지 않는다', () => {
+    const issues = validateScenario(makeScenario());
+    expect(issues.filter((i) => i.message.includes('층'))).toEqual([]);
+  });
+
+  it('존재하지 않는 층을 가리키는 구역을 잡아낸다', () => {
+    const scenario = makeScenario({
+      decks: [{ id: 'deck1', level: 1, name: '1층' }],
+    });
+    scenario.areas = scenario.areas.map((a) => ({ ...a, deckId: 'nowhere' }));
+    expect(
+      errorsOf(scenario).some((e) => e.message.includes('nowhere')),
+    ).toBe(true);
+  });
+
+  it('층수(level) 중복을 잡아낸다', () => {
+    const scenario = makeScenario({
+      decks: [
+        { id: 'a', level: 2, name: '2층' },
+        { id: 'b', level: 2, name: '또 2층' },
+      ],
+    });
+    scenario.areas = scenario.areas.map((a) => ({ ...a, deckId: 'a' }));
+    expect(
+      errorsOf(scenario).some((e) => e.where === 'scenario:decks'),
+    ).toBe(true);
+  });
+
+  it('층이 있는데 미배정인 구역은 경고한다', () => {
+    const scenario = makeScenario({
+      decks: [{ id: 'deck1', level: 1, name: '1층' }],
+    });
+    const issues = validateScenario(scenario);
+    expect(errorsOf(scenario)).toEqual([]);
+    expect(issues.some((i) => i.message.includes('기타'))).toBe(true);
+  });
+
+  it('소속 구역이 없는 층은 경고한다', () => {
+    const scenario = makeScenario({
+      decks: [
+        { id: 'used', level: 1, name: '1층' },
+        { id: 'unused', level: 2, name: '2층' },
+      ],
+    });
+    scenario.areas = scenario.areas.map((a) => ({ ...a, deckId: 'used' }));
+    expect(errorsOf(scenario)).toEqual([]);
+    expect(
+      validateScenario(scenario).some((i) => i.where === 'deck:unused'),
+    ).toBe(true);
+  });
+
   it('총 열람 횟수가 유료 단서를 전부 덮으면 밸런스 경고를 남긴다', () => {
     const scenario = makeScenario({ totalInvestigations: 99 });
     const warnings = validateScenario(scenario).filter((i) => i.severity === 'warning');
     expect(warnings.some((w) => w.where === 'scenario:totalInvestigations')).toBe(true);
+  });
+
+  // ── 힌트 예산 (열람 예산과 별개) ──
+
+  it('총 힌트 횟수가 음수면 오류', () => {
+    expect(errorsOf(makeScenario({ totalHints: -1 }))).toHaveLength(1);
+  });
+
+  it('힌트 비용이 음수면 오류', () => {
+    const scenario = makeScenario();
+    scenario.clues[0] = { ...scenario.clues[0]!, hintCost: -1 };
+    expect(errorsOf(scenario)).toHaveLength(1);
+  });
+
+  it('힌트 없이 힌트 비용만 있으면 경고', () => {
+    const scenario = makeScenario();
+    scenario.clues[2] = { ...scenario.clues[2]!, hint: undefined, hintCost: 2 };
+    expect(warningsOf(scenario).some((w) => w.where.startsWith('clue:'))).toBe(true);
+  });
+
+  it('힌트가 있는데 예산이 0이면 아무도 못 보므로 경고', () => {
+    const warnings = warningsOf(makeScenario({ totalHints: 0 }));
+    expect(warnings.some((w) => w.where === 'scenario:totalHints')).toBe(true);
+  });
+
+  it('힌트 예산이 전체 힌트 비용을 덮으면 밸런스 경고', () => {
+    const warnings = warningsOf(makeScenario({ totalHints: 99 }));
+    expect(warnings.some((w) => w.where === 'scenario:totalHints')).toBe(true);
+  });
+
+  it('힌트 예산이 적당하면 힌트 관련 경고가 없다', () => {
+    // 기본 시나리오는 유료 힌트 2개(a·tier2)에 예산 1이라 압박이 있다.
+    expect(
+      warningsOf(makeScenario()).some((w) => w.where === 'scenario:totalHints'),
+    ).toBe(false);
   });
 });

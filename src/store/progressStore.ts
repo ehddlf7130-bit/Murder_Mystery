@@ -3,8 +3,10 @@ import { persist } from 'zustand/middleware';
 import type { ClueId, Scenario, ScenarioId } from '@/types/scenario';
 import {
   buildClueStates,
+  canRevealHint,
   canView,
   chargeFor,
+  chargeForHint,
   type ProgressSnapshot,
 } from '@/lib/clueRules';
 
@@ -24,6 +26,11 @@ export interface ScenarioProgress extends ProgressSnapshot {
   startedAt: number | null;
   gmUnlockedClueIds: ClueId[];
   bonusInvestigations: number;
+  revealedHintClueIds: ClueId[];
+  /** 단서별 힌트 구매 시각 */
+  revealedHintAt: Record<ClueId, number>;
+  hintsSpent: number;
+  bonusHints: number;
 }
 
 /**
@@ -38,6 +45,10 @@ export const emptyScenarioProgress: ScenarioProgress = {
   startedAt: null,
   gmUnlockedClueIds: [],
   bonusInvestigations: 0,
+  revealedHintClueIds: [],
+  revealedHintAt: {},
+  hintsSpent: 0,
+  bonusHints: 0,
 };
 
 interface ProgressState {
@@ -50,10 +61,26 @@ interface ProgressState {
    */
   viewClue: (scenario: Scenario, clueId: ClueId) => boolean;
 
+  /**
+   * 단서의 힌트를 구매 처리한다. 힌트 예산은 열람 예산과 별개이며,
+   * 본문을 열람한 단서에서만 살 수 있다. viewClue와 같이 규칙을 다시 검사한다.
+   * @returns 실제로 열람 처리되었는지
+   */
+  revealHint: (scenario: Scenario, clueId: ClueId) => boolean;
+
   /** 심판: 이 시나리오의 진행을 초기값으로 되돌린다 */
   resetScenario: (scenarioId: ScenarioId) => void;
   /** 심판: 총 열람 횟수를 가감한다 */
   adjustInvestigations: (scenarioId: ScenarioId, delta: number) => void;
+  /** 심판: 총 힌트 횟수를 가감한다 */
+  adjustHints: (scenarioId: ScenarioId, delta: number) => void;
+  /** 심판: 힌트 공개 여부를 직접 켜고 끈다 (힌트 차감 여부 선택) */
+  setHintRevealed: (
+    scenarioId: ScenarioId,
+    clueId: ClueId,
+    revealed: boolean,
+    options?: { charge?: number },
+  ) => void;
   /** 심판: 선행조건을 무시하고 단서를 해제한다 */
   setForceUnlocked: (
     scenarioId: ScenarioId,
@@ -106,6 +133,29 @@ export const useProgressStore = create<ProgressState>()(
         return true;
       },
 
+      revealHint: (scenario, clueId) => {
+        const current = ensure(get().byScenario, scenario.id);
+        const state = buildClueStates(scenario, current).get(clueId);
+        if (!state || !canRevealHint(state.hint)) return false;
+
+        // 재열람은 차감 없음 — 이미 산 힌트라 상태를 건드릴 필요도 없다.
+        if (state.hint.status === 'revealed') return true;
+
+        const now = Date.now();
+        set({
+          byScenario: {
+            ...get().byScenario,
+            [scenario.id]: {
+              ...current,
+              revealedHintClueIds: [...current.revealedHintClueIds, clueId],
+              revealedHintAt: { ...current.revealedHintAt, [clueId]: now },
+              hintsSpent: current.hintsSpent + chargeForHint(state.hint),
+            },
+          },
+        });
+        return true;
+      },
+
       resetScenario: (scenarioId) => {
         const next = { ...get().byScenario };
         delete next[scenarioId];
@@ -120,6 +170,51 @@ export const useProgressStore = create<ProgressState>()(
             [scenarioId]: {
               ...current,
               bonusInvestigations: current.bonusInvestigations + delta,
+            },
+          },
+        });
+      },
+
+      adjustHints: (scenarioId, delta) => {
+        const current = ensure(get().byScenario, scenarioId);
+        set({
+          byScenario: {
+            ...get().byScenario,
+            [scenarioId]: { ...current, bonusHints: current.bonusHints + delta },
+          },
+        });
+      },
+
+      setHintRevealed: (scenarioId, clueId, revealed, options) => {
+        const current = ensure(get().byScenario, scenarioId);
+        const already = current.revealedHintClueIds.includes(clueId);
+        if (already === revealed) return;
+
+        const charge = options?.charge ?? 0;
+        const revealedHintAt = { ...current.revealedHintAt };
+        let revealedHintClueIds: ClueId[];
+        let hintsSpent: number;
+
+        if (revealed) {
+          revealedHintClueIds = [...current.revealedHintClueIds, clueId];
+          revealedHintAt[clueId] = Date.now();
+          hintsSpent = current.hintsSpent + charge;
+        } else {
+          revealedHintClueIds = current.revealedHintClueIds.filter(
+            (id) => id !== clueId,
+          );
+          delete revealedHintAt[clueId];
+          hintsSpent = Math.max(0, current.hintsSpent - charge);
+        }
+
+        set({
+          byScenario: {
+            ...get().byScenario,
+            [scenarioId]: {
+              ...current,
+              revealedHintClueIds,
+              revealedHintAt,
+              hintsSpent,
             },
           },
         });
@@ -174,8 +269,21 @@ export const useProgressStore = create<ProgressState>()(
     }),
     {
       name: 'mm.progress.v1',
-      version: 1,
+      version: 2,
       partialize: (state) => ({ byScenario: state.byScenario }),
+      /**
+       * v1에는 힌트 필드가 없다. 그대로 두면 `undefined.length`가 터지고
+       * 산술이 NaN이 되므로 시나리오별로 기본값을 채워 넣는다.
+       * 필드가 더 늘어나도 안전하도록 스프레드 순서를 (기본값 → 저장값)으로 둔다.
+       */
+      migrate: (persisted) => {
+        const state = persisted as { byScenario?: Record<ScenarioId, ScenarioProgress> };
+        const byScenario: Record<ScenarioId, ScenarioProgress> = {};
+        for (const [id, saved] of Object.entries(state?.byScenario ?? {})) {
+          byScenario[id] = { ...emptyScenarioProgress, ...saved };
+        }
+        return { byScenario };
+      },
     },
   ),
 );

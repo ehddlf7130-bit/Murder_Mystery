@@ -1,5 +1,6 @@
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ClueCard } from '@/components/clue/ClueCard';
+import { deckLabel, deckOf } from '@/lib/decks';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Panel } from '@/components/ui/Panel';
 import { useScenario } from '../scenarioContext';
@@ -13,6 +14,8 @@ export function AreaDetail() {
 
   const area = scenario.areas.find((a) => a.id === areaId);
   if (!area) return <Navigate to=".." relative="path" replace />;
+
+  const deck = deckOf(area, scenario);
 
   const clues = scenario.clues.filter((clue) => {
     if (clue.location.kind !== 'area' || clue.location.areaId !== area.id) {
@@ -33,7 +36,12 @@ export function AreaDetail() {
         ← 맵으로
       </Link>
 
-      <h2 className="text-fog-100 mb-3 flex items-center gap-3 text-2xl font-bold">
+      {deck && (
+        <p className="text-brass-500 text-xs font-semibold tracking-widest uppercase">
+          {deckLabel(deck)}
+        </p>
+      )}
+      <h2 className="text-fog-100 mt-1 mb-3 flex items-center gap-3 text-2xl font-bold">
         <span aria-hidden>{area.emoji ?? '📍'}</span>
         {area.name}
       </h2>

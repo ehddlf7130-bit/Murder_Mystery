@@ -6,15 +6,30 @@ import type { Clue, Scenario } from '@/types/scenario';
  */
 export function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
   const clues: Clue[] = [
-    { id: 'a', name: '단서 A', location: { kind: 'area', areaId: 'room' }, requires: [], body: 'A' },
-    { id: 'b', name: '단서 B', location: { kind: 'area', areaId: 'room' }, requires: [], body: 'B' },
+    {
+      id: 'a',
+      name: '단서 A',
+      location: { kind: 'area', areaId: 'room' },
+      requires: [],
+      body: 'A',
+      hint: 'A의 힌트',
+    },
+    {
+      id: 'b',
+      name: '단서 B',
+      location: { kind: 'area', areaId: 'room' },
+      requires: [],
+      body: 'B',
+      hint: 'B의 힌트',
+      hintCost: 0,
+    },
     {
       id: 'tier1',
       name: '1차 특수',
       location: { kind: 'area', areaId: 'room' },
       requires: ['a', 'b'],
       body: 'T1',
-      special: { category: 'key', lockedLabel: '??? — 1차', lockedTeaser: '둘을 모아라' },
+      special: { lockedLabel: '??? — 1차', lockedTeaser: '둘을 모아라' },
     },
     {
       id: 'tier2',
@@ -22,7 +37,10 @@ export function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
       location: { kind: 'belonging', characterId: 'suspect' },
       requires: ['tier1'],
       body: 'T2',
-      special: { category: 'key', lockedLabel: '??? — 2차' },
+      // 유료 힌트를 2개로 만들어 기본 예산(1)이 전부를 덮지 않게 한다 —
+      // 기본 시나리오가 밸런스 경고를 내면 진짜 회귀를 가린다.
+      hint: 'T2의 힌트',
+      special: { lockedLabel: '??? — 2차' },
     },
     {
       id: 'hidden',
@@ -42,6 +60,7 @@ export function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
     playtime: '30분',
     synopsis: '테스트',
     totalInvestigations: 2,
+    totalHints: 1,
     characters: [
       {
         id: 'suspect',
@@ -55,7 +74,6 @@ export function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
     ],
     areas: [{ id: 'room', name: '선실', description: '방', order: 1 }],
     clues,
-    specialCategories: [{ key: 'key', label: '결정적 단서' }],
     quiz: [
       {
         kind: 'culprit',

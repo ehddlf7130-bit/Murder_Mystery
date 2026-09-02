@@ -20,6 +20,12 @@ export interface ProgressSnapshot {
   gmUnlockedClueIds: readonly ClueId[];
   /** 심판이 조정한 총 횟수 가감분 (음수 가능) */
   bonusInvestigations: number;
+  /** 힌트를 구매한 단서 ID */
+  revealedHintClueIds: readonly ClueId[];
+  /** 지금까지 소모한 힌트 횟수 */
+  hintsSpent: number;
+  /** 심판이 조정한 총 힌트 가감분 (음수 가능) */
+  bonusHints: number;
 }
 
 export const emptyProgress: ProgressSnapshot = {
@@ -27,6 +33,9 @@ export const emptyProgress: ProgressSnapshot = {
   spent: 0,
   gmUnlockedClueIds: [],
   bonusInvestigations: 0,
+  revealedHintClueIds: [],
+  hintsSpent: 0,
+  bonusHints: 0,
 };
 
 export type ClueStatus =
@@ -39,6 +48,24 @@ export type ClueStatus =
   /** 잠금은 풀렸지만 남은 열람 횟수가 부족하다 */
   | 'insufficient';
 
+export type HintStatus =
+  /** 이 단서에는 힌트가 없다 */
+  | 'none'
+  /** 이미 구매함 — 언제든 무료로 다시 볼 수 있다 */
+  | 'revealed'
+  /** 단서를 열람했고 남은 힌트도 충분하다 */
+  | 'available'
+  /** 단서 본문을 아직 열람하지 않았다 */
+  | 'clueUnviewed'
+  /** 열람은 했지만 남은 힌트 횟수가 부족하다 */
+  | 'insufficient';
+
+export interface HintState {
+  status: HintStatus;
+  /** 이 힌트를 처음 열람할 때 차감되는 힌트 횟수 */
+  cost: number;
+}
+
 export interface ClueState {
   clue: Clue;
   status: ClueStatus;
@@ -50,6 +77,8 @@ export interface ClueState {
   gmUnlocked: boolean;
   /** 목록에 노출해도 되는지 (hiddenUntilUnlocked 처리) */
   visible: boolean;
+  /** 힌트 구매 상태 — 열람 예산과 별개로 계산된다 */
+  hint: HintState;
 }
 
 /**
@@ -77,6 +106,30 @@ export function remainingInvestigations(
 }
 
 /**
+ * 힌트 열람 비용. 미지정 시 1회.
+ * `0`이면 무료 — 진행에 꼭 필요한 길잡이 힌트를 예산 밖에 둘 때 쓴다.
+ */
+export function hintCost(clue: Clue): number {
+  return clue.hintCost ?? 1;
+}
+
+/** 총 허용 힌트 횟수 (심판 조정분 포함) */
+export function totalHints(
+  scenario: Scenario,
+  progress: ProgressSnapshot,
+): number {
+  return Math.max(0, scenario.totalHints + progress.bonusHints);
+}
+
+/** 남은 힌트 횟수 */
+export function remainingHints(
+  scenario: Scenario,
+  progress: ProgressSnapshot,
+): number {
+  return Math.max(0, totalHints(scenario, progress) - progress.hintsSpent);
+}
+
+/**
  * 시나리오 전체의 단서 상태를 한 번에 계산한다.
  * 컴포넌트에서는 useMemo로 감싸 한 번만 계산하고 Map을 조회해 쓴다.
  */
@@ -86,8 +139,10 @@ export function buildClueStates(
 ): Map<ClueId, ClueState> {
   const viewed = new Set(progress.viewedClueIds);
   const gmUnlocked = new Set(progress.gmUnlockedClueIds);
+  const revealedHints = new Set(progress.revealedHintClueIds);
   const byId = new Map(scenario.clues.map((c) => [c.id, c]));
   const remaining = remainingInvestigations(scenario, progress);
+  const hintsLeft = remainingHints(scenario, progress);
 
   const states = new Map<ClueId, ClueState>();
 
@@ -115,6 +170,21 @@ export function buildClueStates(
       status = 'available';
     }
 
+    // 힌트는 본문을 연 뒤에야 살 수 있다. 예산도 열람 예산과 따로 센다.
+    const hCost = hintCost(clue);
+    let hintStatus: HintStatus;
+    if (!clue.hint) {
+      hintStatus = 'none';
+    } else if (revealedHints.has(clue.id)) {
+      hintStatus = 'revealed';
+    } else if (!isViewed) {
+      hintStatus = 'clueUnviewed';
+    } else if (hintsLeft < hCost) {
+      hintStatus = 'insufficient';
+    } else {
+      hintStatus = 'available';
+    }
+
     states.set(clue.id, {
       clue,
       status,
@@ -122,6 +192,7 @@ export function buildClueStates(
       unmetRequires,
       gmUnlocked: forced,
       visible: !(clue.hiddenUntilUnlocked && status === 'locked'),
+      hint: { status: hintStatus, cost: hCost },
     });
   }
 
@@ -136,6 +207,16 @@ export function canView(state: ClueState): boolean {
 /** 이 단서를 여는 데 실제로 차감될 횟수 (재열람은 0) */
 export function chargeFor(state: ClueState): number {
   return state.status === 'viewed' ? 0 : state.cost;
+}
+
+/** 힌트를 열람(또는 재열람)할 수 있는가 */
+export function canRevealHint(hint: HintState): boolean {
+  return hint.status === 'revealed' || hint.status === 'available';
+}
+
+/** 이 힌트를 여는 데 실제로 차감될 힌트 횟수 (재열람은 0) */
+export function chargeForHint(hint: HintState): number {
+  return hint.status === 'revealed' ? 0 : hint.cost;
 }
 
 // ─────────────────────────── 표시용 헬퍼 ───────────────────────────

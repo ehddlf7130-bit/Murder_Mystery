@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { ClueId, Scenario } from '@/types/scenario';
 import {
   buildClueStates,
+  remainingHints,
   remainingInvestigations,
   type ClueState,
 } from '@/lib/clueRules';
@@ -17,23 +18,33 @@ import { useProgressStore, useScenarioProgress } from '@/store/progressStore';
 export function useClueViewer(scenario: Scenario) {
   const progress = useScenarioProgress(scenario.id);
   const viewClue = useProgressStore((s) => s.viewClue);
+  const revealHint = useProgressStore((s) => s.revealHint);
 
   const states = useMemo(
     () => buildClueStates(scenario, progress),
     [scenario, progress],
   );
   const remaining = remainingInvestigations(scenario, progress);
+  const hintsRemaining = remainingHints(scenario, progress);
 
   /** 차감 확인을 기다리는 단서 */
   const [pendingId, setPendingId] = useState<ClueId | null>(null);
   /** 본문이 열려 있는 단서 */
   const [openId, setOpenId] = useState<ClueId | null>(null);
+  /** 열린 단서의 힌트 구매 확인 단계인지 */
+  const [hintConfirming, setHintConfirming] = useState(false);
+
+  /** 다른 단서를 열 때 이전 단서의 힌트 확인 단계가 따라오면 안 된다 */
+  const openAt = useCallback((clueId: ClueId) => {
+    setOpenId(clueId);
+    setHintConfirming(false);
+  }, []);
 
   const open = useCallback(
     (clueId: ClueId) => {
-      if (viewClue(scenario, clueId)) setOpenId(clueId);
+      if (viewClue(scenario, clueId)) openAt(clueId);
     },
-    [scenario, viewClue],
+    [scenario, viewClue, openAt],
   );
 
   /** 카드 클릭 진입점 — 상태에 따라 즉시 열거나 확인을 띄운다 */
@@ -45,7 +56,7 @@ export function useClueViewer(scenario: Scenario) {
       switch (state.status) {
         case 'viewed':
           // 재열람은 차감이 없으니 확인 절차도 없다.
-          setOpenId(clueId);
+          openAt(clueId);
           return;
         case 'available':
           if (state.cost === 0) open(clueId);
@@ -57,7 +68,7 @@ export function useClueViewer(scenario: Scenario) {
           return;
       }
     },
-    [states, open],
+    [states, open, openAt],
   );
 
   const confirmPending = useCallback(() => {
@@ -68,7 +79,34 @@ export function useClueViewer(scenario: Scenario) {
   }, [pendingId, open]);
 
   const cancelPending = useCallback(() => setPendingId(null), []);
-  const close = useCallback(() => setOpenId(null), []);
+
+  const close = useCallback(() => {
+    setOpenId(null);
+    setHintConfirming(false);
+  }, []);
+
+  /**
+   * 힌트 구매는 본문 모달 안에서 인라인 2단계로 처리한다.
+   * 모달 위에 또 모달을 띄우면 z-index가 DOM 순서에 의존하고
+   * Escape 한 번에 두 개가 같이 닫힌다.
+   */
+  const requestHint = useCallback(() => {
+    if (!openId) return;
+    const hint = states.get(openId)?.hint;
+    if (!hint) return;
+    if (hint.status === 'revealed') return;
+    if (hint.status !== 'available') return;
+    // 무료 힌트는 확인 단계 없이 바로 연다.
+    if (hint.cost === 0) revealHint(scenario, openId);
+    else setHintConfirming(true);
+  }, [openId, states, revealHint, scenario]);
+
+  const confirmHint = useCallback(() => {
+    if (openId) revealHint(scenario, openId);
+    setHintConfirming(false);
+  }, [openId, revealHint, scenario]);
+
+  const cancelHint = useCallback(() => setHintConfirming(false), []);
 
   const pendingState: ClueState | null = pendingId
     ? (states.get(pendingId) ?? null)
@@ -80,12 +118,17 @@ export function useClueViewer(scenario: Scenario) {
   return {
     states,
     remaining,
+    hintsRemaining,
     request,
     pendingState,
     openState,
     confirmPending,
     cancelPending,
     close,
+    hintConfirming,
+    requestHint,
+    confirmHint,
+    cancelHint,
   };
 }
 

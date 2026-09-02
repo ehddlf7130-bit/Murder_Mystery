@@ -2,10 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   areaProgress,
   buildClueStates,
+  canRevealHint,
+  chargeForHint,
   clueCost,
   describeUnmetRequires,
   emptyProgress,
+  hintCost,
+  remainingHints,
   remainingInvestigations,
+  totalHints,
   type ProgressSnapshot,
 } from './clueRules';
 import { makeScenario } from './testScenario';
@@ -121,5 +126,93 @@ describe('describeUnmetRequires', () => {
     expect(describeUnmetRequires(states.get('tier2')!.unmetRequires, scenario)).toEqual([
       '선실에서 확인할 것 1개',
     ]);
+  });
+});
+
+// ─────────────────────────── 힌트 ───────────────────────────
+// 힌트는 열람 예산과 **완전히 분리된** 예산을 쓴다.
+// 테스트 시나리오: a(hint, 비용 1) · b(hint, hintCost 0) · 나머지는 힌트 없음
+// totalInvestigations 2 / totalHints 1
+
+describe('hintCost', () => {
+  it('미지정이면 1회', () => {
+    expect(hintCost(scenario.clues.find((c) => c.id === 'a')!)).toBe(1);
+  });
+
+  it('0으로 지정하면 무료 — 진행 필수 힌트를 예산 밖에 둘 수 있다', () => {
+    expect(hintCost(scenario.clues.find((c) => c.id === 'b')!)).toBe(0);
+  });
+});
+
+describe('remainingHints', () => {
+  it('총 힌트에서 소모분을 뺀다', () => {
+    expect(remainingHints(scenario, progress())).toBe(1);
+    expect(remainingHints(scenario, progress({ hintsSpent: 1 }))).toBe(0);
+  });
+
+  it('심판 가감분이 총량에 반영된다', () => {
+    expect(totalHints(scenario, progress({ bonusHints: 3 }))).toBe(4);
+    expect(remainingHints(scenario, progress({ bonusHints: 3, hintsSpent: 2 }))).toBe(2);
+  });
+
+  it('음수로 내려가지 않는다', () => {
+    expect(totalHints(scenario, progress({ bonusHints: -99 }))).toBe(0);
+    expect(remainingHints(scenario, progress({ hintsSpent: 99 }))).toBe(0);
+  });
+});
+
+describe('힌트 상태', () => {
+  const hintOf = (p: ProgressSnapshot, id: string) =>
+    buildClueStates(scenario, p).get(id)!.hint;
+
+  it('힌트가 없는 단서는 none', () => {
+    expect(hintOf(progress(), 'tier1').status).toBe('none');
+  });
+
+  it('본문을 열람하기 전에는 살 수 없다', () => {
+    const hint = hintOf(progress(), 'a');
+    expect(hint.status).toBe('clueUnviewed');
+    expect(canRevealHint(hint)).toBe(false);
+  });
+
+  it('본문을 열람하면 구매 가능해진다', () => {
+    const hint = hintOf(progress({ viewedClueIds: ['a'] }), 'a');
+    expect(hint.status).toBe('available');
+    expect(canRevealHint(hint)).toBe(true);
+    expect(chargeForHint(hint)).toBe(1);
+  });
+
+  it('힌트 예산이 부족하면 insufficient', () => {
+    const hint = hintOf(progress({ viewedClueIds: ['a'], hintsSpent: 1 }), 'a');
+    expect(hint.status).toBe('insufficient');
+    expect(canRevealHint(hint)).toBe(false);
+  });
+
+  it('무료 힌트는 예산이 0이어도 열린다', () => {
+    const hint = hintOf(progress({ viewedClueIds: ['b'], hintsSpent: 1 }), 'b');
+    expect(hint.status).toBe('available');
+    expect(chargeForHint(hint)).toBe(0);
+  });
+
+  it('구매한 힌트는 재열람이 무료다', () => {
+    const hint = hintOf(
+      progress({ viewedClueIds: ['a'], revealedHintClueIds: ['a'], hintsSpent: 1 }),
+      'a',
+    );
+    expect(hint.status).toBe('revealed');
+    expect(canRevealHint(hint)).toBe(true);
+    expect(chargeForHint(hint)).toBe(0);
+  });
+
+  it('열람 예산을 다 써도 힌트 예산은 그대로다', () => {
+    const p = progress({ viewedClueIds: ['a'], spent: 2 });
+    expect(remainingInvestigations(scenario, p)).toBe(0);
+    expect(hintOf(p, 'a').status).toBe('available');
+  });
+
+  it('힌트 예산을 다 써도 단서 열람에는 영향이 없다', () => {
+    const p = progress({ hintsSpent: 1 });
+    expect(remainingHints(scenario, p)).toBe(0);
+    expect(buildClueStates(scenario, p).get('a')!.status).toBe('available');
   });
 });

@@ -9,6 +9,7 @@
 export type ScenarioId = string;
 export type CharacterId = string;
 export type AreaId = string;
+export type DeckId = string;
 export type ClueId = string;
 export type QuestionId = string;
 
@@ -25,11 +26,16 @@ export interface Scenario {
   synopsis: string;
   /** 게임 전체에 허용되는 총 단서 열람 횟수 */
   totalInvestigations: number;
+  /**
+   * 게임 전체에 허용되는 총 힌트 열람 횟수. 열람 횟수와 **완전히 분리된** 예산이다.
+   * 힌트를 쓰지 않는 시나리오는 0.
+   */
+  totalHints: number;
   characters: Character[];
   areas: Area[];
+  /** 맵의 층 구분. 생략하면 구역이 평평한 그리드로 나열된다 */
+  decks?: DeckMeta[];
   clues: Clue[];
-  /** 특수 단서 탭의 섹션 순서와 라벨. `Clue.special.category`와 key로 연결된다 */
-  specialCategories: SpecialCategoryMeta[];
   quiz: QuizQuestion[];
   /** 채점 완료 후 공개되는 진상 */
   epilogue: string;
@@ -62,8 +68,24 @@ export interface Area {
   emoji?: string;
   /** 구역 진입 시 보여주는 장면 묘사 */
   description: string;
-  /** 목록 정렬 순서 (작은 값이 먼저) */
+  /** 같은 층 안에서의 정렬 순서 (작은 값이 먼저) */
   order: number;
+  /** 소속 층. `Scenario.decks`를 정의한 시나리오에서만 쓴다 */
+  deckId?: DeckId;
+}
+
+/**
+ * 맵 조사 화면의 층 구분.
+ * 정의하지 않으면 구역이 층 없이 평평하게 나열된다 (단층 시나리오).
+ */
+export interface DeckMeta {
+  id: DeckId;
+  /** 실제 층수. 화면은 높은 층부터 아래로 쌓아 배의 단면도처럼 보여준다 */
+  level: number;
+  /** "브리지 데크" */
+  name: string;
+  /** "승객 출입 금지" 같은 한 줄 접근 안내 */
+  note?: string;
 }
 
 /** 단서가 놓인 곳: 맵 구역 또는 특정 인물의 소지품 */
@@ -77,8 +99,16 @@ export interface Clue {
   location: ClueLocation;
   /** 열람 시 보여주는 본문 */
   body: string;
-  /** 다음에 무엇을 볼지 유도하는 방향성 힌트 */
+  /**
+   * 다음에 무엇을 볼지 유도하는 방향성 힌트.
+   * 본문과 달리 **힌트 예산을 따로 소모해야** 볼 수 있다.
+   */
   hint?: string;
+  /**
+   * 힌트 열람 시 차감되는 힌트 횟수. 미지정 시 1회.
+   * `0`으로 두면 무료로 열린다 — 진행에 꼭 필요한 길잡이 힌트를 예산 밖에 둘 때 쓴다.
+   */
+  hintCost?: number;
   /**
    * 선행 단서 ID 목록. 빈 배열이면 처음부터 열람 가능.
    * 여기 적힌 단서를 **모두 열람 완료**해야 해제된다.
@@ -97,19 +127,10 @@ export interface Clue {
 }
 
 export interface SpecialMeta {
-  /** 특수 단서 탭의 섹션 구분 키 */
-  category: string;
   /** 잠김 상태에서 대신 보여줄 이름. 예: "??? — 부검 정밀 결과" */
   lockedLabel: string;
   /** 잠김 상태에서 보여줄 뉘앙스. 예: "시신을 자세히 볼 방법이 필요하다" */
   lockedTeaser?: string;
-}
-
-/** 특수 단서 탭 섹션의 표시 순서와 라벨 */
-export interface SpecialCategoryMeta {
-  key: string;
-  label: string;
-  emoji?: string;
 }
 
 interface QuizQuestionBase {

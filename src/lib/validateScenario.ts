@@ -1,5 +1,5 @@
 import type { Clue, ClueId, Scenario } from '@/types/scenario';
-import { clueCost } from './clueRules';
+import { clueCost, hintCost } from './clueRules';
 
 /**
  * 시나리오 무결성 검사.
@@ -66,12 +66,12 @@ export function validateScenario(scenario: Scenario): ValidationIssue[] {
   const clueIds = new Set(scenario.clues.map((c) => c.id));
   const areaIds = new Set(scenario.areas.map((a) => a.id));
   const characterIds = new Set(scenario.characters.map((c) => c.id));
-  const categoryKeys = new Set(scenario.specialCategories.map((c) => c.key));
 
   // ── 중복 ID ──
   for (const [label, ids] of [
     ['clue', scenario.clues.map((c) => c.id)],
     ['area', scenario.areas.map((a) => a.id)],
+    ['deck', (scenario.decks ?? []).map((d) => d.id)],
     ['character', scenario.characters.map((c) => c.id)],
     ['question', scenario.quiz.map((q) => q.id)],
   ] as const) {
@@ -111,11 +111,11 @@ export function validateScenario(scenario: Scenario): ValidationIssue[] {
     if (clueCost(clue) < 0) {
       error(where, '열람 비용이 음수입니다.');
     }
-    if (clue.special && !categoryKeys.has(clue.special.category)) {
-      error(
-        where,
-        `specialCategories에 없는 카테고리입니다: ${clue.special.category}`,
-      );
+    if (hintCost(clue) < 0) {
+      error(where, '힌트 비용이 음수입니다.');
+    }
+    if (!clue.hint && clue.hintCost !== undefined) {
+      warn(where, '힌트가 없는데 힌트 비용만 지정되어 있습니다.');
     }
     if (!clue.special && clue.hiddenUntilUnlocked && clue.requires.length === 0) {
       warn(where, '선행조건 없이 hiddenUntilUnlocked라 영원히 보이지 않습니다.');
@@ -149,19 +149,32 @@ export function validateScenario(scenario: Scenario): ValidationIssue[] {
   }
 
   // ── 구역 ──
+  const decks = scenario.decks ?? [];
+  const deckIds = new Set(decks.map((d) => d.id));
+
   for (const area of scenario.areas) {
     const hasClue = scenario.clues.some(
       (c) => c.location.kind === 'area' && c.location.areaId === area.id,
     );
     if (!hasClue) warn(`area:${area.id}`, '이 구역에 배치된 단서가 없습니다.');
+
+    if (area.deckId !== undefined && !deckIds.has(area.deckId)) {
+      error(`area:${area.id}`, `존재하지 않는 층을 가리킵니다: ${area.deckId}`);
+    } else if (decks.length > 0 && area.deckId === undefined) {
+      warn(
+        `area:${area.id}`,
+        '층이 지정되지 않아 맵에서 "기타" 섹션으로 빠집니다.',
+      );
+    }
   }
 
-  // ── 특수 단서 카테고리 ──
-  for (const category of scenario.specialCategories) {
-    const used = scenario.clues.some((c) => c.special?.category === category.key);
-    if (!used) {
-      warn(`specialCategory:${category.key}`, '이 카테고리를 쓰는 단서가 없습니다.');
-    }
+  // ── 층 ──
+  for (const level of findDuplicates(decks.map((d) => String(d.level)))) {
+    error('scenario:decks', `층수(level)가 중복됩니다: ${level}`);
+  }
+  for (const deck of decks) {
+    const used = scenario.areas.some((a) => a.deckId === deck.id);
+    if (!used) warn(`deck:${deck.id}`, '이 층에 속한 구역이 없습니다.');
   }
 
   // ── 문항 ──
@@ -240,6 +253,25 @@ export function validateScenario(scenario: Scenario): ValidationIssue[] {
       warn(
         'scenario:totalInvestigations',
         `총 ${scenario.totalInvestigations}회로 유료 단서 전부(${fullCost}회)를 열 수 있어 예산 압박이 없습니다.`,
+      );
+    }
+  }
+
+  // 힌트 예산은 열람 예산과 별개다 — 같은 기준으로 따로 검사한다.
+  if (scenario.totalHints < 0) {
+    error('scenario:totalHints', '총 힌트 횟수가 음수입니다.');
+  } else {
+    const hinted = scenario.clues.filter((c) => c.hint);
+    const fullHintCost = hinted.reduce((sum, c) => sum + hintCost(c), 0);
+    if (hinted.length > 0 && scenario.totalHints === 0) {
+      warn(
+        'scenario:totalHints',
+        `힌트가 ${hinted.length}개 있지만 힌트 예산이 0이라 아무도 볼 수 없습니다.`,
+      );
+    } else if (scenario.totalHints > 0 && scenario.totalHints >= fullHintCost) {
+      warn(
+        'scenario:totalHints',
+        `총 ${scenario.totalHints}회로 유료 힌트 전부(${fullHintCost}회)를 볼 수 있어 선택의 여지가 없습니다.`,
       );
     }
   }

@@ -10,7 +10,8 @@
     "preview": "vite preview --host",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:content": "node scripts/check-content.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
