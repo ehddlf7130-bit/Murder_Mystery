@@ -90,11 +90,18 @@ UI 코드는 건드리지 않는다.
 
 ## 배포 (GitHub Pages)
 
+현재 배포 주소: **https://ehddlf7130-bit.github.io/Murder_Mystery/**
+
 1. GitHub 저장소를 만들어 push한다.
 2. 저장소 Settings → Pages → Source를 **GitHub Actions**로 설정한다.
 3. `main`에 push하면 [.github/workflows/deploy.yml](.github/workflows/deploy.yml)이
    테스트 → 빌드 → 배포한다. 서브패스 배포를 위해 `VITE_BASE`를 저장소 이름으로
    자동 주입한다.
+
+> ⚠️ **저장소가 public이어야 한다.** 무료 플랜에서는 private 저장소의 Pages를
+> 켤 수 없다. private인 채로 두면 2번을 건너뛰게 되어 워크플로가 마지막
+> `configure-pages` 단계에서 `Get Pages site failed ... Not Found`로 실패한다
+> (빌드·테스트는 통과한 뒤라 원인이 눈에 잘 안 띈다).
 
 라우팅은 `HashRouter`를 쓴다 — GitHub Pages에는 SPA fallback이 없어 일반
 라우터라면 새로고침 시 404가 난다.
