@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
+import { SpecialUnlockDialog } from './SpecialUnlockDialog';
 import type { ClueViewer } from './useClueViewer';
 
 const hintBox =
@@ -78,8 +79,11 @@ function HintSection({
 }
 
 /**
- * 열람 확인 + 단서 본문 모달.
- * 진행 화면의 모든 목록(구역·특수·기록)이 이 한 쌍을 공유한다.
+ * 열람 확인 + 단서 본문 + 특수 단서 해제 알림 모달.
+ * 진행 화면의 모든 목록(구역·특수·기록)이 이 한 벌을 공유한다.
+ *
+ * 셋은 서로 겹치지 않는다 — 해제 알림은 앞의 두 모달이 모두 닫혔을 때만
+ * `unlockedSpecials`가 채워지도록 useClueViewer가 보장한다.
  */
 export function ClueViewerDialogs({
   viewer,
@@ -88,8 +92,18 @@ export function ClueViewerDialogs({
   viewer: ClueViewer;
   scenario: Scenario;
 }) {
-  const { pendingState, openState, remaining, confirmPending, cancelPending, close } =
-    viewer;
+  const {
+    pendingState,
+    openState,
+    remaining,
+    confirmPending,
+    cancelPending,
+    close,
+    states,
+    unlockedSpecials,
+    dismissUnlocked,
+    openUnlocked,
+  } = viewer;
 
   return (
     <>
@@ -156,6 +170,14 @@ export function ClueViewerDialogs({
           </div>
         )}
       </Modal>
+
+      <SpecialUnlockDialog
+        clues={unlockedSpecials}
+        states={states}
+        scenario={scenario}
+        onOpen={openUnlocked}
+        onDismiss={dismissUnlocked}
+      />
     </>
   );
 }

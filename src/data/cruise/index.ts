@@ -21,7 +21,7 @@ export const cruiseScenario: Scenario = {
   // 단서를 더 추가할 예정이라, 그때까지는 유료 단서 전부를 열 수 있어
   // GM 패널에 밸런스 경고가 하나 뜬다.
   totalInvestigations: 25,
-  // 힌트는 열람 예산과 별개다. 힌트가 달린 단서 11개 중 5개만 살 수 있다.
+  // 힌트는 열람 예산과 별개다. 힌트가 달린 단서 8개 중 5개만 살 수 있다.
   totalHints: 5,
   characters,
   areas,

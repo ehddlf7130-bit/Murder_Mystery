@@ -1,6 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ClueCard } from '@/components/clue/ClueCard';
 import { deckLabel, deckOf } from '@/lib/decks';
+import { isAreaListedClue } from '@/lib/clueRules';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Panel } from '@/components/ui/Panel';
 import { useScenario } from '../scenarioContext';
@@ -18,11 +19,9 @@ export function AreaDetail() {
   const deck = deckOf(area, scenario);
 
   const clues = scenario.clues.filter((clue) => {
-    if (clue.location.kind !== 'area' || clue.location.areaId !== area.id) {
-      return false;
-    }
+    // 특수 단서는 구역에 놓여 있어도 여기 나오지 않는다 — 특수 단서 탭 전용이다.
+    if (!isAreaListedClue(clue, area.id)) return false;
     // hiddenUntilUnlocked 단서는 해제될 때까지 이 목록에 나타나지 않는다.
-    // (특수 단서 탭에서는 잠김 상태로 보여 목표는 인지할 수 있다)
     return states.get(clue.id)?.visible ?? false;
   });
 

@@ -8,7 +8,7 @@ import type { Clue } from '@/types/scenario';
  *   유료 단서 24개 (해제조건 없음 · 각 1회 차감)
  *   특수 단서 5개 (해제조건을 모두 충족하면 열람 · 무료)
  *   └─ 박세현의 소지품 (유료 1개 요구)
- *      └─ 정밀 부검 결과 (박세현의 소지품 + 1차 부검 소견서 + 떨어진 베개)
+ *      └─ 정밀 부검 결과 (박세현의 소지품 + 1차 검안 소견서 + 떨어진 베개)
  *   └─ 나머지 특수 단서 3개 (각 유료 2개 요구 · 서로 독립)
  *
  * 특수 단서 5개를 전부 해제하는 최소 경로는 유료 9회. 총 32개.
@@ -78,7 +78,7 @@ export const clues: Clue[] = [
     location: { kind: 'area', areaId: 'actor-cabin' },
     requires: [],
     body: '3년 전 백강윤의 마약 혐의를 다룬 기사 인쇄물이다.',
-    hint: '그 무렵 안혜주와 백강윤은 한 영화의 주연이었고, 그 영화의 투자자는 손남일이었다.',
+    hint: '마약 사건이 터지기 전, 안혜주와 백강윤은 같은 영화의 주연 배우였으며 해당 작품의 메인 투자자는 다름 아닌 손남일이었다.',
   },
   {
     id: 'handwritten-letter',
@@ -146,8 +146,8 @@ export const clues: Clue[] = [
 
   // ───────────────────────── 의무실 ─────────────────────────
   {
-    id: 'first-autopsy',
-    name: '1차 부검 소견서',
+    id: 'first-exam',
+    name: '1차 검안 소견서',
     location: { kind: 'area', areaId: 'medbay' },
     requires: [],
     body: '청색증 확인. 사망 당일 고인이 다량의 술을 마셨고 수면제를 처방받은 것으로 확인되어, 약물성 호흡억제에 의한 질식으로 추정된다는 소견이 적혀 있다. 작성자 설헌규.',
@@ -157,7 +157,7 @@ export const clues: Clue[] = [
     name: '약물 요청 기록',
     location: { kind: 'area', areaId: 'medbay' },
     requires: [],
-    body: "20시경 손남일이 수면제를 요청했다는 접수 기록. 처리란에는 '객실 전달 완료'라고만 적혀 있다.",
+    body: "손남일이 수면제를 요청했다는 접수 기록. 처리란에는 '객실 전달 완료'라고만 적혀 있다.",
   },
   {
     id: 'medical-waste',
@@ -181,7 +181,7 @@ export const clues: Clue[] = [
     name: '소파의 머리카락',
     location: { kind: 'area', areaId: 'captain-room' },
     requires: [],
-    body: '소파에서 여성용 긴 머리카락이 여러 가닥 발견되었다. 염색 톤이 안혜주의 것과 일치한다.',
+    body: '소파에서 여성용 긴 머리카락이 여러 가닥 발견되었다.',
   },
   {
     id: 'logbook-gap',
@@ -201,11 +201,11 @@ export const clues: Clue[] = [
     hint: '영상이 존재했다면, 없앤 사람에게는 없앨 이유가 있었다.',
   },
   {
-    id: 'masterkey',
-    name: 'CCTV실 마스터키',
+    id: 'cctv-key',
+    name: 'CCTV실 키',
     location: { kind: 'area', areaId: 'cctv-room' },
     requires: [],
-    body: '선내에서 마스터키를 소지한 사람은 선장과 기관장 둘뿐이다.',
+    body: '선내에서 CCTV실 키를 소지한 사람은 선장 뿐이다.',
   },
   {
     id: 'visit-requests',
@@ -245,7 +245,6 @@ export const clues: Clue[] = [
       '카메라 가방에서 경찰 신분증과 수사 지휘서가 나온다. 박세현은 기자가 아니라 마약 유통 신고를 받고 잠입한 강력반 형사다.',
       '촬영본 대부분은 승객이 아니라 승무원 동선과 화물 구역을 향해 있다. 00시대에는 셀프 타임스탬프가 연속으로 남아 있어, 그 시간 라운지를 벗어나지 않았음이 확인된다.',
     ].join('\n\n'),
-    hint: '이 사람이라면 정밀 부검을 정식으로 요청할 수 있다.',
   },
   {
     id: 'sp-agent-envelope',
@@ -257,13 +256,12 @@ export const clues: Clue[] = [
       '손남일의 수행원이 두고 간 서류 봉투에서 한 병원의 처방 기록 사본이 나온다. 펜타닐과 프로포폴을 비롯한 마약성 진통제가 100명이 넘는 환자 명의로 처방된 기록이며, 처방의는 전부 설헌규다.',
       '같은 봉투에 설헌규의 가족 신상이 정리된 문서가 함께 들어 있다. 주소와 학교, 등하교 동선까지 적혀 있다.',
     ].join('\n\n'),
-    hint: '이 서류를 되찾고 싶어 하는 사람이 이 배에 있다.',
   },
   {
     id: 'sp-belongings-jung',
     name: '정현호의 소지품',
     location: { kind: 'belonging', characterId: 'jung' },
-    requires: ['masterkey', 'moved-crates'],
+    requires: ['cctv-key', 'moved-crates'],
     special: { lockedLabel: '???' },
     body: [
       '사물함 이중 바닥에서 CCTV 저장장치가 나온다. 봉인이 뜯기지 않아 단 한 번도 재생된 적이 없다.',
@@ -276,14 +274,13 @@ export const clues: Clue[] = [
     location: { kind: 'belonging', characterId: 'ahn' },
     requires: ['letter-draft', 'sofa-hair'],
     special: { lockedLabel: '???' },
-    body: '객실 카드키가 두 장이고 그중 하나는 4층 전용이다. 옷깃에서는 남성용 향수 잔향이 확인된다.',
-    hint: '이 사람은 그 시각 어디에 있었는지 아직 말하지 않았다.',
+    body: '몇 장의 필름 인화 사진. 어두운 방 안에서 안혜주와 정현호가 은밀히 뒤엉켜 있는 모습이 적나라하게 찍혀 있다.',
   },
   {
     id: 'sp-autopsy',
     name: '정밀 부검 결과',
     location: { kind: 'area', areaId: 'medbay' },
-    requires: ['sp-belongings-park', 'first-autopsy', 'fallen-pillow'],
+    requires: ['sp-belongings-park', 'first-exam', 'fallen-pillow'],
     special: { lockedLabel: '???' },
     body: [
       '혈중 펜타닐이 검출되었으나 농도는 치사량의 3분의 1에 그친다. 약물은 사인이 아니다.',

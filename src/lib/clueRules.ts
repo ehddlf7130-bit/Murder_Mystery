@@ -1,4 +1,5 @@
 import type {
+  AreaId,
   Clue,
   ClueId,
   ClueLocation,
@@ -219,6 +220,29 @@ export function chargeForHint(hint: HintState): number {
   return hint.status === 'revealed' ? 0 : hint.cost;
 }
 
+/**
+ * `viewedClueId`를 여는 것이 마지막 선행조건이어서 새로 해제되는 특수 단서들.
+ *
+ * 열람 **직전** 상태만으로 판정한다 — 스토어가 갱신된 뒤에는 이미 해제 상태라
+ * "방금 해제되었다"를 구분할 수 없기 때문이다.
+ * 목록 순서는 시나리오 정의 순서를 따른다 (Map의 삽입 순서).
+ */
+export function specialCluesUnlockedBy(
+  viewedClueId: ClueId,
+  statesBefore: Map<ClueId, ClueState>,
+): Clue[] {
+  const unlocked: Clue[] = [];
+  for (const state of statesBefore.values()) {
+    if (!state.clue.special) continue;
+    if (state.status !== 'locked') continue;
+    // 남은 미충족 선행조건이 지금 여는 그 단서 하나뿐일 때만 해제된다.
+    if (state.unmetRequires.length !== 1) continue;
+    if (state.unmetRequires[0]!.id !== viewedClueId) continue;
+    unlocked.push(state.clue);
+  }
+  return unlocked;
+}
+
 // ─────────────────────────── 표시용 헬퍼 ───────────────────────────
 
 /** "의무실" / "정하람의 소지품" */
@@ -254,6 +278,18 @@ export function describeUnmetRequires(
   return [...counts].map(([label, n]) => `${label}에서 확인할 것 ${n}개`);
 }
 
+/**
+ * 맵의 구역 화면에 나열되는 단서인지.
+ *
+ * 특수 단서는 위치가 구역이더라도 **'특수 단서' 탭에서만** 다룬다 —
+ * 소지품 단서와 같은 취급이다. 그래야 특수 단서가 어느 구역에 걸려 있는지가
+ * 맵에서 미리 새어 나가지 않고, 해제 여부도 한 곳에서만 관리된다.
+ */
+export function isAreaListedClue(clue: Clue, areaId: AreaId): boolean {
+  if (clue.special) return false;
+  return clue.location.kind === 'area' && clue.location.areaId === areaId;
+}
+
 /** 구역별 열람 진행도 — 구역 카드 배지에 쓴다 */
 export function areaProgress(
   areaId: string,
@@ -263,7 +299,7 @@ export function areaProgress(
   let viewed = 0;
   let total = 0;
   for (const clue of scenario.clues) {
-    if (clue.location.kind !== 'area' || clue.location.areaId !== areaId) continue;
+    if (!isAreaListedClue(clue, areaId)) continue;
     const state = states.get(clue.id);
     // 아직 감춰진 단서는 총계에서도 빼야 진행도가 스포일러가 되지 않는다.
     if (!state?.visible) continue;

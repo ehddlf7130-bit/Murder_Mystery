@@ -94,19 +94,20 @@ describe('groupAreasByDeck', () => {
   });
 
   it('층 진행도는 소속 구역의 열람 수를 합산한다', () => {
-    // 테스트 시나리오의 단서는 전부 'room'에 있고, 감춰진 것 1개를 빼면 3개다
+    // 테스트 시나리오의 구역 단서는 'room'에 있고, 감춰진 것 1개와
+    // 특수 단서 1개(tier1)를 빼면 2개다
     const scenario = makeScenario({ decks });
     scenario.areas = [
       { id: 'room', name: '선실', description: '방', order: 1, deckId: 'mid' },
     ];
     const before = groupAreasByDeck(scenario, states(scenario));
-    expect(before[0]!.progress).toEqual({ viewed: 0, total: 3 });
+    expect(before[0]!.progress).toEqual({ viewed: 0, total: 2 });
 
     const after = groupAreasByDeck(
       scenario,
       buildClueStates(scenario, { ...emptyProgress, viewedClueIds: ['a'] }),
     );
     // 'a'를 열람하면 hidden 단서가 해제되어 총계에 들어온다
-    expect(after[0]!.progress).toEqual({ viewed: 1, total: 4 });
+    expect(after[0]!.progress).toEqual({ viewed: 1, total: 3 });
   });
 });

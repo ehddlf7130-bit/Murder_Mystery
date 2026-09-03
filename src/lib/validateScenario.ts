@@ -1,5 +1,5 @@
 import type { Clue, ClueId, Scenario } from '@/types/scenario';
-import { clueCost, hintCost } from './clueRules';
+import { clueCost, hintCost, isAreaListedClue } from './clueRules';
 
 /**
  * 시나리오 무결성 검사.
@@ -153,9 +153,8 @@ export function validateScenario(scenario: Scenario): ValidationIssue[] {
   const deckIds = new Set(decks.map((d) => d.id));
 
   for (const area of scenario.areas) {
-    const hasClue = scenario.clues.some(
-      (c) => c.location.kind === 'area' && c.location.areaId === area.id,
-    );
+    // 특수 단서는 구역 화면에 나오지 않으므로 이 구역을 채워주지 못한다.
+    const hasClue = scenario.clues.some((c) => isAreaListedClue(c, area.id));
     if (!hasClue) warn(`area:${area.id}`, '이 구역에 배치된 단서가 없습니다.');
 
     if (area.deckId !== undefined && !deckIds.has(area.deckId)) {

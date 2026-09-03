@@ -10,6 +10,7 @@ import {
   hintCost,
   remainingHints,
   remainingInvestigations,
+  specialCluesUnlockedBy,
   totalHints,
   type ProgressSnapshot,
 } from './clueRules';
@@ -101,14 +102,25 @@ describe('buildClueStates', () => {
 describe('areaProgress', () => {
   it('감춰진 단서는 총계에서도 제외해 진행도가 스포일러가 되지 않는다', () => {
     const states = buildClueStates(scenario, progress());
-    // 선실의 단서 4개 중 hidden은 제외 → 3개
-    expect(areaProgress('room', scenario, states)).toEqual({ viewed: 0, total: 3 });
+    // 선실의 단서 4개 중 hidden(감춰짐)과 tier1(특수)은 제외 → 2개
+    expect(areaProgress('room', scenario, states)).toEqual({ viewed: 0, total: 2 });
   });
 
   it('열람한 개수를 센다', () => {
     const states = buildClueStates(scenario, progress({ viewedClueIds: ['a'], spent: 1 }));
     // hidden이 해제되어 총계에 들어온다
-    expect(areaProgress('room', scenario, states)).toEqual({ viewed: 1, total: 4 });
+    expect(areaProgress('room', scenario, states)).toEqual({ viewed: 1, total: 3 });
+  });
+
+  it('구역에 놓인 특수 단서는 구역 진행도에 넣지 않는다', () => {
+    // tier1은 location이 room이지만 특수 단서라 구역 화면에 나오지 않는다.
+    const states = buildClueStates(
+      scenario,
+      progress({ viewedClueIds: ['a', 'b', 'tier1'], spent: 2 }),
+    );
+    expect(states.get('tier1')!.status).toBe('viewed');
+    // 열람했어도 구역 총계·열람 수 어디에도 잡히지 않는다 (a·b·hidden 3개 중 2개)
+    expect(areaProgress('room', scenario, states)).toEqual({ viewed: 2, total: 3 });
   });
 });
 
@@ -214,5 +226,48 @@ describe('힌트 상태', () => {
     const p = progress({ hintsSpent: 1 });
     expect(remainingHints(scenario, p)).toBe(0);
     expect(buildClueStates(scenario, p).get('a')!.status).toBe('available');
+  });
+});
+
+describe('specialCluesUnlockedBy', () => {
+  /** 열람 **직전** 상태를 만들어 넘긴다 — 판정 시점이 그때이기 때문이다 */
+  function unlockedBy(clueId: string, p: ProgressSnapshot = progress()) {
+    return specialCluesUnlockedBy(clueId, buildClueStates(scenario, p)).map(
+      (c) => c.id,
+    );
+  }
+
+  it('마지막 선행조건을 열면 그 특수 단서가 해제된다', () => {
+    expect(unlockedBy('b', progress({ viewedClueIds: ['a'], spent: 1 }))).toEqual([
+      'tier1',
+    ]);
+  });
+
+  it('선행조건이 남아 있으면 아무것도 해제되지 않는다', () => {
+    expect(unlockedBy('a')).toEqual([]);
+  });
+
+  it('특수 단서가 아닌 게이팅 단서는 반환되지 않는다', () => {
+    // hidden도 'a'를 선행조건으로 갖지만 special이 없다.
+    expect(unlockedBy('a')).not.toContain('hidden');
+  });
+
+  it('특수 단서가 다음 특수 단서를 해제하는 연쇄도 잡는다', () => {
+    const p = progress({ viewedClueIds: ['a', 'b'], spent: 2 });
+    expect(unlockedBy('tier1', p)).toEqual(['tier2']);
+  });
+
+  it('이미 열람한 단서를 다시 열면 해제되는 것이 없다', () => {
+    const p = progress({ viewedClueIds: ['a', 'b'], spent: 2 });
+    expect(unlockedBy('a', p)).toEqual([]);
+  });
+
+  it('심판이 이미 강제 해제한 특수 단서는 다시 알리지 않는다', () => {
+    const p = progress({
+      viewedClueIds: ['a'],
+      spent: 1,
+      gmUnlockedClueIds: ['tier1'],
+    });
+    expect(unlockedBy('b', p)).toEqual([]);
   });
 });
