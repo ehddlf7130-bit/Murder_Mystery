@@ -5,13 +5,13 @@ import type { Clue } from '@/types/scenario';
  *
  * 게이팅 구조
  *   무료 현장 단서 3개 (해제조건 없음 · cost 0 명시)
- *   유료 단서 24개 (해제조건 없음 · 각 1회 차감)
+ *   유료 단서 28개 (해제조건 없음 · 각 1회 차감)
  *   특수 단서 5개 (해제조건을 모두 충족하면 열람 · 무료)
- *   └─ 박세현의 소지품 (유료 1개 요구)
+ *   └─ 박세현의 소지품 (유료 2개 요구)
  *      └─ 정밀 부검 결과 (박세현의 소지품 + 1차 검안 소견서 + 떨어진 베개)
- *   └─ 나머지 특수 단서 3개 (각 유료 2개 요구 · 서로 독립)
+ *   └─ 나머지 특수 단서 3개 (각 유료 2~3개 요구 · 서로 독립)
  *
- * 특수 단서 5개를 전부 해제하는 최소 경로는 유료 9회. 총 32개.
+ * 특수 단서 5개를 전부 해제하는 최소 경로는 유료 12회. 총 36개.
  */
 
 export const clues: Clue[] = [
@@ -87,6 +87,13 @@ export const clues: Clue[] = [
     requires: [],
     body: '초대권과 함께 들어 있던 짧은 편지. "백강윤, 그동안 고생했는데 크루즈 여행 어때?" 필체는 손남일의 것이다.',
   },
+  {
+    id: 'whiskey-smell',
+    name: '객실에 감도는 술 냄새',
+    location: { kind: 'area', areaId: 'actor-cabin' },
+    requires: [],
+    body: '객실 안에 위스키 향이 진하게 배어 있다. 문을 열고 한참이 지났는데도 냄새가 빠지지 않는다.',
+  },
 
   // ───────────────────────── 객실 복도 ─────────────────────────
   {
@@ -110,6 +117,13 @@ export const clues: Clue[] = [
     requires: [],
     body: '00시 05분, 3층 복도에서 선장을 만나 순찰 내용을 보고했다는 기록.',
     hint: '해당 승무원에게 물어본 결과, 선장은 보고를 듣고 아래층으로 내려갔다고 한다.',
+  },
+  {
+    id: 'patrol-2000',
+    name: '순찰 일지 20시 00분',
+    location: { kind: 'area', areaId: 'corridor' },
+    requires: [],
+    body: '20시 00분, 설헌규가 가방을 들고 3층 복도로 들어가는 것을 목격했다는 기록. 나온 시각은 적혀 있지 않다.',
   },
 
   // ───────────────────────── 연회홀 ─────────────────────────
@@ -142,15 +156,30 @@ export const clues: Clue[] = [
     location: { kind: 'area', areaId: 'lounge' },
     requires: [],
     body: "00시 38분에 커피를 결제한 영수증. 서명란에는 '박세현'이라고 적혀 있다.",
+    hint: '바텐더 증언. 밤늦게 한 남성이 자리에 앉아 사진을 여러 장 늘어놓고 한참을 들여다봤다고 한다. 무엇을 하느냐고 묻자 기사에 넣을 사진을 정리 중이라고 답했다.',
+  },
+  {
+    id: 'torn-paper',
+    name: '찢어진 종이',
+    location: { kind: 'area', areaId: 'lounge' },
+    requires: [],
+    body: '소파 아래에서 찢어진 종잇조각이 나왔다. 오늘 날짜와 중량으로 보이는 숫자가 남아 있고, 시각과 품목이 적힌 부분은 찢겨 나가 확인할 수 없다.',
   },
 
   // ───────────────────────── 의무실 ─────────────────────────
+  {
+    id: 'desk-frame',
+    name: '책상 위 작은 액자',
+    location: { kind: 'area', areaId: 'medbay' },
+    requires: [],
+    body: '책상 위에 작은 액자가 놓여 있다. 설헌규와 그의 가족으로 보이는 이들이 함께 찍혀 있다.',
+  },
   {
     id: 'first-exam',
     name: '1차 검안 소견서',
     location: { kind: 'area', areaId: 'medbay' },
     requires: [],
-    body: '청색증 확인. 사망 당일 고인이 다량의 술을 마셨고 수면제를 처방받은 것으로 확인되어, 약물성 호흡억제에 의한 질식으로 추정된다는 소견이 적혀 있다. 작성자 설헌규.',
+    body: '청색증 확인. 사망 당일 고인이 다량의 술을 마셨고 수면제를 처방받은 것으로 확인되어, 알코올과 수면제 병용 섭취로 인한 급성 약물 중독 및 급성 호흡 부전으로 추정된다는 소견이 적혀 있다. 작성자 설헌규.',
   },
   {
     id: 'drug-request',
@@ -202,10 +231,10 @@ export const clues: Clue[] = [
   },
   {
     id: 'cctv-key',
-    name: 'CCTV실 키',
+    name: 'CCTV실 열쇠',
     location: { kind: 'area', areaId: 'cctv-room' },
     requires: [],
-    body: '선내에서 CCTV실 키를 소지한 사람은 선장 뿐이다.',
+    body: '선내에서 CCTV실 열쇠를 소지한 사람은 선장 뿐이다.',
   },
   {
     id: 'visit-requests',
@@ -239,7 +268,7 @@ export const clues: Clue[] = [
     id: 'sp-belongings-park',
     name: '박세현의 소지품',
     location: { kind: 'belonging', characterId: 'park' },
-    requires: ['visit-requests'],
+    requires: ['visit-requests', 'receipt-0038'],
     special: { lockedLabel: '???' },
     body: [
       '카메라 가방에서 경찰 신분증과 수사 지휘서가 나온다. 박세현은 기자가 아니라 마약 유통 신고를 받고 잠입한 강력반 형사다.',
@@ -250,23 +279,20 @@ export const clues: Clue[] = [
     id: 'sp-agent-envelope',
     name: '대리인의 서류 봉투',
     location: { kind: 'area', areaId: 'ballroom' },
-    requires: ['guest-list', 'business-card'],
+    requires: ['guest-list', 'business-card', 'desk-frame'],
     special: { lockedLabel: '???' },
     body: [
-      '손남일의 수행원이 두고 간 서류 봉투에서 한 병원의 처방 기록 사본이 나온다. 펜타닐과 프로포폴을 비롯한 마약성 진통제가 100명이 넘는 환자 명의로 처방된 기록이며, 처방의는 전부 설헌규다.',
-      '같은 봉투에 설헌규의 가족 신상이 정리된 문서가 함께 들어 있다. 주소와 학교, 등하교 동선까지 적혀 있다.',
+      '손남일의 수행원이 두고 간 서류 봉투에서 한 병원의 처방 기록 사본이 나온다. 펜타닐과 프로포폴을 비롯한 마약성 진통제가 10명이 넘는 환자 명의로 처방된 기록이며, 처방의는 전부 설헌규다.',
+      '같은 봉투에 설헌규의 가족 신상이 정리된 문서가 함께 들어 있다. 주소와 설헌규의 딸이 다니는 학교, 등하교 동선까지 적혀 있다.',
     ].join('\n\n'),
   },
   {
     id: 'sp-belongings-jung',
     name: '정현호의 소지품',
     location: { kind: 'belonging', characterId: 'jung' },
-    requires: ['cctv-key', 'moved-crates'],
+    requires: ['cctv-key', 'moved-crates', 'torn-paper'],
     special: { lockedLabel: '???' },
-    body: [
-      '사물함 이중 바닥에서 CCTV 저장장치가 나온다. 봉인이 뜯기지 않아 단 한 번도 재생된 적이 없다.',
-      '함께 나온 수기 장부에는 기항지별 날짜와 중량이 빼곡히 적혀 있다.',
-    ].join('\n\n'),
+    body: '사물함 바닥판을 들어 올리자 숨겨져 있던 CCTV 저장장치와 CCTV실 열쇠가 모습을 드러냈다. 함께 쑤셔 박혀 있던 찢긴 서류에는 대량의 마약(코카인) 거래 내역이 빼곡히 기록되어 있었다.',
   },
   {
     id: 'sp-belongings-ahn',
