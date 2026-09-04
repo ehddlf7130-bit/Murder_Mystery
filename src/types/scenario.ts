@@ -24,6 +24,11 @@ export interface Scenario {
   playtime: string;
   /** 게임 시작 시 심판이 낭독하는 도입부 */
   synopsis: string;
+  /**
+   * 전원이 공유하는 목표. 개인 목표와 별도로 모든 플레이어에게 동일하게 보인다.
+   * 개인 목표와 달리 체크 대상이 아니다 (읽기 전용).
+   */
+  sharedGoals?: string[];
   /** 게임 전체에 허용되는 총 단서 열람 횟수 */
   totalInvestigations: number;
   /**

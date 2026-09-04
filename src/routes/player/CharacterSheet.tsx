@@ -12,7 +12,7 @@ type Tab = 'story' | 'goals' | 'public';
 
 const tabLabels: Record<Tab, string> = {
   story: '배경',
-  goals: '개인 목표',
+  goals: '목표',
   public: '공개 정보',
 };
 
@@ -104,6 +104,25 @@ export function CharacterSheet() {
 
       {tab === 'goals' && (
         <div className="space-y-3">
+          {scenario.sharedGoals && scenario.sharedGoals.length > 0 && (
+            <Panel className="border-brass-600/50 bg-brass-500/5">
+              <p className="text-brass-300 mb-2 text-xs font-semibold tracking-widest uppercase">
+                🤝 공동 목표
+              </p>
+              <ul className="text-fog-100 space-y-2 text-sm leading-relaxed">
+                {scenario.sharedGoals.map((goal) => (
+                  <li key={goal}>· {goal}</li>
+                ))}
+              </ul>
+              <p className="text-fog-400 mt-3 text-xs">
+                이 배에 탄 모두에게 주어진 목표입니다.
+              </p>
+            </Panel>
+          )}
+
+          <p className="text-fog-400 pt-2 text-xs font-semibold tracking-widest uppercase">
+            개인 목표
+          </p>
           <p className="text-fog-400 text-sm">
             목표를 달성했다고 생각하면 체크해 두세요. 점수와는 무관한 개인 메모입니다.
           </p>

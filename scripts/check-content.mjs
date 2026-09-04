@@ -194,6 +194,7 @@ function parseManuscript(text) {
     totalInvestigations: Number(infoFields.get('총 열람 횟수')),
     totalHints: Number(infoFields.get('총 힌트 횟수')),
     synopsis: prose(infoSub.get('도입부') ?? []),
+    sharedGoals: bullets(infoSub.get('공동 목표') ?? []),
     epilogue: prose(infoSub.get('에필로그') ?? []),
     decks,
     areas,
@@ -257,6 +258,7 @@ function compare(md, code) {
     ['총 열람 횟수', md.totalInvestigations, code.totalInvestigations],
     ['총 힌트 횟수', md.totalHints, code.totalHints],
     ['도입부', md.synopsis, code.synopsis],
+    ['공동 목표', md.sharedGoals, code.sharedGoals ?? []],
     ['에필로그', md.epilogue, code.epilogue],
   ]) {
     if (d.cmp('기본 정보', field, a, b)) d.ok('기본 정보');
