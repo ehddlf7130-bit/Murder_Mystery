@@ -123,7 +123,8 @@ export const clues: Clue[] = [
     name: '순찰 일지 20시 00분',
     location: { kind: 'area', areaId: 'corridor' },
     requires: [],
-    body: '20시 00분, 설헌규가 가방을 들고 3층 복도로 들어가는 것을 목격했다는 기록. 나온 시각은 적혀 있지 않다.',
+    body: '20시 00분, 설헌규가 3층 복도로 들어가는 것을 목격했다는 기록. 나온 시각은 적혀 있지 않다.',
+    hint: '승무원의 증언에 의하면, 설헌규는 가방을 들고 3층 복도로 들어갔다고 한다.',
   },
 
   // ───────────────────────── 연회홀 ─────────────────────────
@@ -211,6 +212,7 @@ export const clues: Clue[] = [
     location: { kind: 'area', areaId: 'captain-room' },
     requires: [],
     body: '소파에서 여성용 긴 머리카락이 여러 가닥 발견되었다.',
+    hint: '머리카락의 색깔이 안혜주의 것과 일치한다.',
   },
   {
     id: 'logbook-gap',
@@ -227,7 +229,6 @@ export const clues: Clue[] = [
     location: { kind: 'area', areaId: 'cctv-room' },
     requires: [],
     body: '01시 30분까지 정상 녹화되었다는 것을 로그를 통해 확인했다.',
-    hint: '영상이 존재했다면, 없앤 사람에게는 없앨 이유가 있었다.',
   },
   {
     id: 'cctv-key',
@@ -314,6 +315,5 @@ export const clues: Clue[] = [
       '경부 전면에 압박흔, 결막에 점상출혈이 확인된다. 기도에서는 깃털과 면섬유가 검출되었다.',
       '사인은 경부 압박 및 안면 폐색에 의한 질식사. 사망 추정 시각은 00시 20분에서 00시 40분 사이다.',
     ].join('\n\n'),
-    hint: '사인이 바뀌면 지금까지의 의심도 전부 다시 짜야 한다.',
   },
 ];
