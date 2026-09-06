@@ -83,15 +83,16 @@ export function ClueCard({
       {locked && <RequirementList state={state} scenario={scenario} />}
 
       {/*
-        힌트는 힌트 예산을 따로 소모해야 볼 수 있다.
-        구매 전에 원문을 흘리면 유료화가 무의미하므로 존재만 알린다.
+        목록에는 힌트 원문을 **구매 후에도** 싣지 않는다.
+        지문이 카드에 남으면 공용 노트북을 훑는 것만으로 누구나 읽어 버려서,
+        "힌트를 본 사람이 말로 전달하거나 감출 수 있다"는 설계가 무너진다.
+        원문은 단서 본문 모달에서 버튼을 눌렀을 때만 잠깐 보인다.
       */}
-      {status === 'viewed' && state.hint.status === 'revealed' && (
-        <p className="text-fog-400 line-clamp-2 text-sm">💡 {clue.hint}</p>
-      )}
-      {status === 'viewed' && state.hint.status !== 'revealed' && clue.hint && (
+      {status === 'viewed' && clue.hint && (
         <p className="text-fog-500 text-xs">
-          💡 힌트 있음 {state.hint.cost === 0 ? '· 무료' : `· ${state.hint.cost}회`}
+          {state.hint.status === 'revealed'
+            ? '💡 힌트 확인함 · 다시 보기 무료'
+            : `💡 힌트 있음 ${state.hint.cost === 0 ? '· 무료' : `· ${state.hint.cost}회`}`}
         </p>
       )}
 

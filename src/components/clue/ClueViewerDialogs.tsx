@@ -15,6 +15,10 @@ const hintBox =
  * 힌트는 열람 예산과 별개인 **힌트 예산**을 따로 소모한다.
  * 본문을 연 뒤에만 살 수 있고, 한 번 사면 이후로는 무료다.
  *
+ * 산 힌트도 기본은 감춰 둔다 — 지문을 화면에 상주시키면 옆사람이 그냥 읽어 버려서,
+ * "힌트를 본 사람이 말로 전달하거나 감출 수 있다"는 설계가 무너진다.
+ * 그래서 볼 때마다 버튼을 눌러야 하고(무료), 모달을 닫으면 다시 감춰진다.
+ *
  * 구매 확인은 모달을 새로 띄우지 않고 같은 자리에서 2단계로 처리한다 —
  * 본문 모달 위에 ConfirmDialog를 겹치면 z-index가 DOM 순서에 의존하고
  * Escape 한 번에 두 개가 같이 닫힌다.
@@ -27,13 +31,39 @@ function HintSection({
   viewer: ClueViewer;
 }) {
   const { hint, clue } = state;
-  const { hintsRemaining, hintConfirming, requestHint, confirmHint, cancelHint } =
-    viewer;
+  const {
+    hintsRemaining,
+    hintConfirming,
+    hintShown,
+    requestHint,
+    confirmHint,
+    cancelHint,
+    hideHint,
+  } = viewer;
 
   if (hint.status === 'none') return null;
 
   if (hint.status === 'revealed') {
-    return <p className={`${hintBox} text-brass-300`}>💡 {clue.hint}</p>;
+    if (hintShown) {
+      return (
+        <div className={`${hintBox} space-y-3`}>
+          <p className="text-brass-300">💡 {clue.hint}</p>
+          <div className="flex justify-end">
+            <Button size="sm" variant="ghost" onClick={hideHint}>
+              가리기
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className={`${hintBox} flex flex-wrap items-center justify-between gap-3`}>
+        <p className="text-fog-300 text-sm">💡 힌트를 확인한 단서입니다</p>
+        <Button size="sm" variant="secondary" onClick={requestHint}>
+          힌트 다시 보기 · 무료
+        </Button>
+      </div>
+    );
   }
 
   if (hintConfirming) {

@@ -37,13 +37,20 @@ export function useClueViewer(scenario: Scenario) {
   const [openId, setOpenId] = useState<ClueId | null>(null);
   /** 열린 단서의 힌트 구매 확인 단계인지 */
   const [hintConfirming, setHintConfirming] = useState(false);
+  /**
+   * 이미 산 힌트의 지문을 지금 화면에 띄우고 있는지.
+   * 영속화하지 않는다 — 힌트를 본 사람만 알고 말로 전달하게 하려는 것이므로,
+   * 모달을 닫으면 다시 감춰져야 한다.
+   */
+  const [hintShown, setHintShown] = useState(false);
   /** 해제되었지만 아직 안내하지 않은 특수 단서 */
   const [unlockQueue, setUnlockQueue] = useState<Clue[]>([]);
 
-  /** 다른 단서를 열 때 이전 단서의 힌트 확인 단계가 따라오면 안 된다 */
+  /** 다른 단서를 열 때 이전 단서의 힌트 확인 단계·지문이 따라오면 안 된다 */
   const openAt = useCallback((clueId: ClueId) => {
     setOpenId(clueId);
     setHintConfirming(false);
+    setHintShown(false);
   }, []);
 
   const open = useCallback(
@@ -93,6 +100,7 @@ export function useClueViewer(scenario: Scenario) {
   const close = useCallback(() => {
     setOpenId(null);
     setHintConfirming(false);
+    setHintShown(false);
   }, []);
 
   /**
@@ -104,19 +112,30 @@ export function useClueViewer(scenario: Scenario) {
     if (!openId) return;
     const hint = states.get(openId)?.hint;
     if (!hint) return;
-    if (hint.status === 'revealed') return;
+    // 이미 산 힌트는 차감 없이 다시 띄우기만 한다.
+    if (hint.status === 'revealed') {
+      setHintShown(true);
+      return;
+    }
     if (hint.status !== 'available') return;
     // 무료 힌트는 확인 단계 없이 바로 연다.
-    if (hint.cost === 0) revealHint(scenario, openId);
-    else setHintConfirming(true);
+    if (hint.cost === 0) {
+      revealHint(scenario, openId);
+      setHintShown(true);
+    } else setHintConfirming(true);
   }, [openId, states, revealHint, scenario]);
 
   const confirmHint = useCallback(() => {
     if (openId) revealHint(scenario, openId);
     setHintConfirming(false);
+    // 방금 값을 치렀으므로 곧바로 보여 준다.
+    setHintShown(true);
   }, [openId, revealHint, scenario]);
 
   const cancelHint = useCallback(() => setHintConfirming(false), []);
+
+  /** 지문을 다시 감춘다 — 옆사람이 훔쳐보는 것을 막는 용도 */
+  const hideHint = useCallback(() => setHintShown(false), []);
 
   /**
    * 해제 알림은 본문·확인 모달이 **모두 닫혀 있을 때만** 띄운다.
@@ -161,9 +180,11 @@ export function useClueViewer(scenario: Scenario) {
     cancelPending,
     close,
     hintConfirming,
+    hintShown,
     requestHint,
     confirmHint,
     cancelHint,
+    hideHint,
     unlockedSpecials,
     dismissUnlocked,
     openUnlocked,
