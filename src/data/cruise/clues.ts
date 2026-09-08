@@ -188,10 +188,12 @@ export const clues: Clue[] = [
     requires: [],
     body: '책상 위에 작은 액자가 놓여 있다. 설헌규와 그의 가족으로 보이는 이들이 함께 찍혀 있다.',
   },
+  // 소견서만 시신 안치실에 있다. 원고의 나열 순서를 그대로 따르려고
+  // 위치와 무관하게 이 자리에 둔다.
   {
     id: 'first-exam',
     name: '1차 검안 소견서',
-    location: { kind: 'area', areaId: 'medbay' },
+    location: { kind: 'area', areaId: 'morgue' },
     requires: [],
     body: '청색증 확인. 사망 당일 고인이 다량의 술을 마셨고 수면제를 처방받은 것으로 확인되어, 알코올과 수면제 병용 섭취로 인한 급성 약물 중독 및 급성 호흡 부전으로 추정된다는 소견이 적혀 있다. 작성자 설헌규.',
   },
