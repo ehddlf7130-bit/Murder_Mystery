@@ -96,6 +96,14 @@ export function validateScenario(scenario: Scenario): ValidationIssue[] {
         `존재하지 않는 인물의 소지품입니다: ${clue.location.characterId}`,
       );
     }
+    // 위치가 '특수 단서'면 구역 화면에 안 나오므로, special까지 없으면
+    // 특수 단서 탭에도 걸리지 않아 영영 볼 수 없는 단서가 된다.
+    if (clue.location.kind === 'special' && !clue.special) {
+      error(
+        where,
+        "위치가 '특수 단서'인데 special이 없어 어디에도 노출되지 않습니다.",
+      );
+    }
 
     for (const req of clue.requires) {
       if (req === clue.id) {

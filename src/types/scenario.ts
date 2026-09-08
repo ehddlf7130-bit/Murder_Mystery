@@ -93,10 +93,15 @@ export interface DeckMeta {
   note?: string;
 }
 
-/** 단서가 놓인 곳: 맵 구역 또는 특정 인물의 소지품 */
+/**
+ * 단서가 놓인 곳: 맵 구역, 특정 인물의 소지품,
+ * 또는 지도상의 장소가 없는 특수 단서.
+ */
 export type ClueLocation =
   | { kind: 'area'; areaId: AreaId }
-  | { kind: 'belonging'; characterId: CharacterId };
+  | { kind: 'belonging'; characterId: CharacterId }
+  /** 지도에 자리를 갖지 않는 단서. 반드시 `special`과 짝을 이룬다 */
+  | { kind: 'special' };
 
 export interface Clue {
   id: ClueId;

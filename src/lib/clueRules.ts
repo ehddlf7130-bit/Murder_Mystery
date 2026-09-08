@@ -245,11 +245,12 @@ export function specialCluesUnlockedBy(
 
 // ─────────────────────────── 표시용 헬퍼 ───────────────────────────
 
-/** "의무실" / "정하람의 소지품" */
+/** "의무실" / "정하람의 소지품" / "특수 단서" */
 export function locationLabel(
   location: ClueLocation,
   scenario: Scenario,
 ): string {
+  if (location.kind === 'special') return '특수 단서';
   if (location.kind === 'area') {
     return (
       scenario.areas.find((a) => a.id === location.areaId)?.name ?? '알 수 없는 구역'

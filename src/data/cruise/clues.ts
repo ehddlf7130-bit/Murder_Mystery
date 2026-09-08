@@ -4,25 +4,41 @@ import type { Clue } from '@/types/scenario';
  * 원고: content/cruise.md
  *
  * 게이팅 구조
- *   무료 현장 단서 3개 (해제조건 없음 · cost 0 명시)
+ *   무료 현장 단서 4개 (해제조건 없음 · cost 0 명시)
  *   유료 단서 28개 (해제조건 없음 · 각 1회 차감)
- *   특수 단서 5개 (해제조건을 모두 충족하면 열람 · 무료)
+ *   특수 단서 6개 (해제조건을 모두 충족하면 열람 · 무료 · 지도에 자리 없음)
  *   └─ 박세현의 소지품 (유료 2개 요구)
- *      └─ 정밀 부검 결과 (박세현의 소지품 + 1차 검안 소견서 + 떨어진 베개)
- *   └─ 나머지 특수 단서 3개 (각 유료 2~3개 요구 · 서로 독립)
+ *      └─ 정밀 부검 결과 (박세현의 소지품 + 비틀린 셔츠 깃 + 떨어진 베개)
+ *   └─ 나머지 특수 단서 4개 (각 유료 2~3개 요구 · 서로 독립)
  *
- * 특수 단서 5개를 전부 해제하는 최소 경로는 유료 12회. 총 36개.
+ * 특수 단서 6개를 전부 해제하는 최소 경로는 유료 14회. 총 38개.
  */
 
 export const clues: Clue[] = [
-  // ───────────────────────── 손남일의 객실 ─────────────────────────
+  // ───────────────────────── 시신 안치실 ─────────────────────────
   {
     id: 'body-state',
     name: '시신의 상태',
-    location: { kind: 'area', areaId: 'victim-cabin' },
+    location: { kind: 'area', areaId: 'morgue' },
     requires: [],
     cost: 0,
-    body: '손남일은 침대에 바르게 누운 자세다. 외상은 없고 입술과 손톱이 푸르게 변색되어 있으며, 눈꺼풀 안쪽에는 좁쌀만 한 붉은 점이 흩어져 있다. 사후경직 정도로 볼 때 사망은 00시에서 01시 사이로 추정된다.',
+    body: '손남일은 침대에 바르게 누운 자세다. 입술과 손톱이 푸르게 변색되어 있으며, 눈꺼풀 안쪽에는 좁쌀만 한 붉은 점이 흩어져 있다. 사후경직 정도로 볼 때 사망은 00시에서 01시 사이로 추정된다.',
+  },
+  {
+    id: 'twisted-collar',
+    name: '비틀린 셔츠 깃',
+    location: { kind: 'area', areaId: 'morgue' },
+    requires: [],
+    body: '손남일의 셔츠 깃이 한쪽으로 비틀려 늘어나 있다. 두 번째 단추가 뜯겨 나갔다. 단추는 손남일의 객실에서 발견됐다.',
+  },
+
+  // ───────────────────────── 손남일의 객실 ─────────────────────────
+  {
+    id: 'pill-envelope',
+    name: '의문의 봉투',
+    location: { kind: 'area', areaId: 'victim-cabin' },
+    requires: [],
+    body: '협탁 위에 의무실에서 전달된 수면제 봉투가 뜯기지 않은 채 놓여 있다.',
   },
   {
     id: 'two-glasses',
@@ -62,13 +78,6 @@ export const clues: Clue[] = [
     location: { kind: 'area', areaId: 'victim-cabin' },
     requires: [],
     body: '쏟아진 술 자국이 문 쪽으로 이어진다. 여러 사람이 지나간 흔적이 아니라 한 사람이 같은 구간에서 반복해 비틀거린 궤적에 가깝다.',
-  },
-  {
-    id: 'twisted-collar',
-    name: '비틀린 셔츠 깃',
-    location: { kind: 'area', areaId: 'victim-cabin' },
-    requires: [],
-    body: '손남일의 셔츠 깃이 한쪽으로 비틀려 늘어나 있다. 두 번째 단추가 떨어져 침대 밑에 굴러 있다.',
   },
 
   // ───────────────────────── 백강윤의 객실 ─────────────────────────
@@ -124,40 +133,44 @@ export const clues: Clue[] = [
     location: { kind: 'area', areaId: 'corridor' },
     requires: [],
     body: '20시 00분, 설헌규가 3층 복도로 들어가는 것을 목격했다는 기록. 나온 시각은 적혀 있지 않다.',
-    hint: '승무원의 증언에 의하면, 설헌규는 가방을 들고 3층 복도로 들어갔다고 한다.',
+    hint: '승무원의 증언에 의하면, 설헌규는 라텍스 장갑을 낀 채로 가방을 들고 3층 복도로 들어갔다고 한다.',
   },
 
   // ───────────────────────── 연회홀 ─────────────────────────
+  {
+    id: 'ballroom-quarrel',
+    name: '연회홀의 언쟁',
+    location: { kind: 'area', areaId: 'ballroom' },
+    requires: [],
+    body: '승무원 증언. 22시경 선장과 손남일이 객실 문제로 언쟁을 벌였고, 선장이 결국 고개를 숙여 사과하며 상황을 무마했다.',
+  },
   {
     id: 'guest-list',
     name: '파티 참석 명부',
     location: { kind: 'area', areaId: 'ballroom' },
     requires: [],
-    body: '참석자 서명 목록과 현장 사진. 22시 30분까지는 이 배에 탄 다섯 사람 전원의 소재가 확인되며, 명부 끝에는 손남일의 수행원 한 명이 따로 서명해 두었다.',
+    cost: 0,
+    body: [
+      '입구 테이블에 놓인 방명록. 20시 00분 파티 시작과 함께 서명이 시작됐고, 서명 옆에 도착 시각이 적혀 있다.',
+      '정현호 20:00 · 안혜주 20:00 · 박세현 20:00 · 백강윤 20:00 · 손남일 20:20 · 설헌규 20:30',
+    ].join('\n\n'),
   },
   {
-    id: 'afternoon-quarrel',
-    name: '오후의 언쟁',
+    id: 'seat-photo',
+    name: '자리 밑의 사진',
     location: { kind: 'area', areaId: 'ballroom' },
     requires: [],
-    body: '승무원 증언. 오후에 선장과 손남일이 객실 문제로 언쟁을 벌였고, 선장이 결국 고개를 숙여 사과하며 상황을 무마했다.',
-  },
-  {
-    id: 'business-card',
-    name: '자리 밑의 명함',
-    location: { kind: 'area', areaId: 'ballroom' },
-    requires: [],
-    body: '손남일이 앉았던 자리 밑에서 설헌규의 명함이 나왔다. 뒷면에는 아무것도 적혀 있지 않다.',
+    body: '손남일이 앉았던 자리 밑에서 여자 아이의 사진이 나왔다.',
   },
 
   // ───────────────────────── 라운지 카페 ─────────────────────────
   {
-    id: 'receipt-0038',
-    name: '00시 38분 영수증',
+    id: 'receipt-2238',
+    name: '22시 38분 영수증',
     location: { kind: 'area', areaId: 'lounge' },
     requires: [],
-    body: "00시 38분에 커피를 결제한 영수증. 서명란에는 '박세현'이라고 적혀 있다.",
-    hint: '바텐더 증언. 밤늦게 한 여성이 자리에 앉아 사진을 여러 장 늘어놓고 한참을 들여다봤다고 한다. 무엇을 하느냐고 묻자 기사에 넣을 사진을 정리 중이라고 답했다.',
+    body: "22시 38분에 커피를 결제한 영수증. 서명란에는 '박세현'이라고 적혀 있다.",
+    hint: '바텐더 증언. 22시 40분경부터 새벽 1시까지 한 여성이 자리에 앉아 사진을 여러 장 늘어놓고 한참을 들여다봤다고 한다. 무엇을 하느냐고 묻자 기사에 넣을 사진을 정리 중이라고 답했다.',
   },
   {
     id: 'torn-paper',
@@ -194,7 +207,7 @@ export const clues: Clue[] = [
     name: '의료용 폐기물통',
     location: { kind: 'area', areaId: 'medbay' },
     requires: [],
-    body: '사용된 주사기와 빈 앰플 병 하나, 1회용 장갑, 소량의 피가 묻은 거즈가 들어 있다.',
+    body: '사용된 주사기와 빈 앰플 병 하나, 1회용 장갑이 들어있다.',
     hint: '주사기와 빈 앰플 병은 깨끗하게 세척되어 있다.',
   },
 
@@ -263,13 +276,13 @@ export const clues: Clue[] = [
   },
 
   // ──────────────────────── 특수 단서 ────────────────────────
-  // 원고 순서를 그대로 따른다. '대리인의 서류 봉투'는 연회홀 단서지만
-  // 특수 단서라 원고에서도 이 블록에 놓여 있다.
+  // 원고 순서를 그대로 따른다. 지도에 자리를 갖지 않으므로 위치는 전부 'special'이고,
+  // 오직 특수 단서 탭에만 노출된다.
   {
     id: 'sp-belongings-park',
     name: '박세현의 소지품',
-    location: { kind: 'belonging', characterId: 'park' },
-    requires: ['visit-requests', 'receipt-0038'],
+    location: { kind: 'special' },
+    requires: ['visit-requests', 'receipt-2238'],
     special: { lockedLabel: '???' },
     body: [
       '카메라 가방에서 경찰 신분증과 수사 지휘서가 나온다. 박세현은 기자가 아니라 마약 유통 신고를 받고 잠입한 강력반 형사다.',
@@ -279,8 +292,8 @@ export const clues: Clue[] = [
   {
     id: 'sp-agent-envelope',
     name: '대리인의 서류 봉투',
-    location: { kind: 'area', areaId: 'ballroom' },
-    requires: ['guest-list', 'business-card', 'desk-frame'],
+    location: { kind: 'special' },
+    requires: ['seat-photo', 'desk-frame'],
     special: { lockedLabel: '???' },
     body: [
       '손남일의 수행원이 두고 간 서류 봉투에서 한 병원의 처방 기록 사본이 나온다. 펜타닐과 프로포폴을 비롯한 마약성 진통제가 10명이 넘는 환자 명의로 처방된 기록이며, 처방의는 전부 설헌규다.',
@@ -290,7 +303,7 @@ export const clues: Clue[] = [
   {
     id: 'sp-belongings-jung',
     name: '정현호의 소지품',
-    location: { kind: 'belonging', characterId: 'jung' },
+    location: { kind: 'special' },
     requires: ['cctv-key', 'moved-crates', 'torn-paper'],
     special: { lockedLabel: '???' },
     body: '사물함 바닥판을 들어 올리자 숨겨져 있던 CCTV 저장장치와 CCTV실 열쇠가 모습을 드러냈다. 함께 쑤셔 박혀 있던 찢긴 서류에는 대량의 마약(코카인) 거래 내역이 빼곡히 기록되어 있었다.',
@@ -298,7 +311,7 @@ export const clues: Clue[] = [
   {
     id: 'sp-belongings-ahn',
     name: '안혜주의 소지품',
-    location: { kind: 'belonging', characterId: 'ahn' },
+    location: { kind: 'special' },
     requires: ['letter-draft', 'sofa-hair'],
     special: { lockedLabel: '???' },
     body: '몇 장의 필름 인화 사진. 어두운 방 안에서 안혜주와 정현호가 은밀히 뒤엉켜 있는 모습이 적나라하게 찍혀 있다.',
@@ -306,14 +319,21 @@ export const clues: Clue[] = [
   {
     id: 'sp-autopsy',
     name: '정밀 부검 결과',
-    location: { kind: 'area', areaId: 'medbay' },
-    requires: ['sp-belongings-park', 'first-exam', 'fallen-pillow'],
+    location: { kind: 'special' },
+    requires: ['sp-belongings-park', 'twisted-collar', 'fallen-pillow'],
     special: { lockedLabel: '???' },
     body: [
-      '혈중 펜타닐이 검출되었으나 농도는 치사량의 3분의 1에 그친다. 약물은 사인이 아니다.',
-      '객실에서 수거한 샴페인 병에서도 같은 성분이 검출되며, 남은 양만으로도 치사량을 크게 넘는다. 피해자는 그 술을 거의 마시지 않았다.',
+      '혈중 펜타닐 농도는 치사량의 3분의 1에 그쳐 약물은 사인이 아니다.',
       '경부 전면에 압박흔, 결막에 점상출혈이 확인된다. 기도에서는 깃털과 면섬유가 검출되었다.',
       '사인은 경부 압박 및 안면 폐색에 의한 질식사. 사망 추정 시각은 00시 20분에서 00시 40분 사이다.',
     ].join('\n\n'),
+  },
+  {
+    id: 'sp-blood-test',
+    name: '혈액 검사 의뢰서',
+    location: { kind: 'special' },
+    requires: ['champagne', 'first-exam', 'pill-envelope'],
+    special: { lockedLabel: '???' },
+    body: '사망 당일 채취한 혈액의 외부 검사 의뢰서. 펜타닐이 검출되었으나 농도는 치사량의 3분의 1에 그친다. 수면제 성분은 나오지 않았다.',
   },
 ];

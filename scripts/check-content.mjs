@@ -293,9 +293,11 @@ function compare(md, code) {
   const clueName = new Map(code.clues.map((c) => [c.id, c.name]));
   compareList(d, '단서', md.clues, code.clues, (x) => x.name, (dd, w, m, c) => {
     const loc =
-      c.location.kind === 'area'
-        ? areaName.get(c.location.areaId)
-        : `소지품 / ${charName.get(c.location.characterId)}`;
+      c.location.kind === 'special'
+        ? '특수단서'
+        : c.location.kind === 'area'
+          ? areaName.get(c.location.areaId)
+          : `소지품 / ${charName.get(c.location.characterId)}`;
     dd.cmp(w, '위치', m.location, loc);
     dd.cmp(w, '해제조건', m.requires, c.requires.map((id) => clueName.get(id) ?? id));
     dd.cmp(w, '비용', m.cost, c.cost);

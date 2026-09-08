@@ -32,7 +32,7 @@ export const areas: Area[] = [
     order: 2,
     deckId: 'cabin',
     description:
-      '같은 층 반대편 끝. 침대 위에 사람이 누웠던 자국이 그대로 남아 있고, 옷과 짐이 아무렇게나 흩어져 있다.',
+      '같은 층 반대편 끝. 침대 위에 사람이 누웠던 흔적이 그대로 남아 있고, 옷과 짐이 아무렇게나 흩어져 있다.',
   },
   {
     id: 'corridor',
@@ -41,7 +41,7 @@ export const areas: Area[] = [
     order: 3,
     deckId: 'cabin',
     description:
-      '3층 객실 구역을 잇는 좁은 복도. 승무원 순찰이 정기적으로 도는 구간이며, 카펫에는 밤사이 오간 흔적이 그대로 눌려 있다.',
+      '3층 객실 구역을 잇는 좁은 복도. 승무원 순찰이 정기적으로 도는 구간이다.',
   },
   {
     id: 'ballroom',
@@ -50,7 +50,7 @@ export const areas: Area[] = [
     order: 4,
     deckId: 'public',
     description:
-      '어젯밤 파티가 열린 2층 홀. 치우다 만 잔과 접시가 그대로 놓여 있고, 참석자 명부가 입구 테이블에 펼쳐져 있다.',
+      '어젯밤 파티가 열린 2층 홀. 치우다 만 잔과 접시가 그대로 놓여 있다.',
   },
   {
     id: 'lounge',
@@ -68,7 +68,7 @@ export const areas: Area[] = [
     order: 6,
     deckId: 'public',
     description:
-      '선내 의무진이 쓰는 방. 약품 캐비닛과 장부가 나란히 놓여 있고, 시신은 이곳으로 옮겨져 1차 검안을 마친 상태다.',
+      '선내 의무진이 쓰는 방. 약품 캐비닛과 장부가 나란히 놓여 있다.',
   },
   {
     id: 'captain-room',
@@ -77,7 +77,7 @@ export const areas: Area[] = [
     order: 7,
     deckId: 'bridge',
     description:
-      '4층 브리지 옆 선장 전용 공간. 승객 출입은 원칙적으로 금지되어 있다. 소파에 눌린 자국이 남아 있고 공기에 향수 냄새가 옅게 배어 있다.',
+      '4층 브리지 옆 선장 전용 공간. 승객 출입은 원칙적으로 금지되어 있다.',
   },
   {
     id: 'cctv-room',
@@ -95,6 +95,14 @@ export const areas: Area[] = [
     order: 9,
     deckId: 'lower',
     description:
-      '1층 최하부 화물 구역. 승무원 계단으로만 접근할 수 있고 조명이 어둡다. 컨테이너 사이 바닥에 최근 무언가를 끌어낸 자국이 있다.',
+      '1층 최하부 화물 구역. 승무원 계단으로만 접근할 수 있고 조명이 어둡다.',
+  },
+  {
+    id: 'morgue',
+    name: '시신 안치실',
+    emoji: '💀',
+    order: 10,
+    deckId: 'lower',
+    description: '손남일의 시신이 임시로 안치되어있다.',
   },
 ];
